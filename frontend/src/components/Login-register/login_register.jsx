@@ -10,7 +10,7 @@ const Login_register = () => {
 const [action,setAction] = useState("Login");
 
   return ( 
-    <div className='container'>
+    <form className='container'>
       <div className="header">
         <div className="text">{action}</div>
         <div className="underline"></div>
@@ -39,7 +39,7 @@ const [action,setAction] = useState("Login");
        <div className={action==="Login"?"submit gray":"submit"} onClick={()=>{setAction("Login")}}>Login</div>
        <div className={action==="Register"?"submit gray":"submit"} onClick={()=>{setAction("Register")}}>Register</div>
       </div>
-    </div>
+    </form>
   )
 }
 
