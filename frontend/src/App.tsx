@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+
 import { 
   LayoutDashboard, Users, Kanban, FileText, Receipt as ReceiptIcon, UsersRound, 
   MessageSquare, Plus, Search, Bell, Menu, X, Sun, Moon,
@@ -28,7 +29,7 @@ import './App.css';
 
 gsap.registerPlugin(ScrollTrigger);
 
-// Utility functions
+
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('en-GH', { style: 'currency', currency: 'GHS' }).format(amount);
 };
@@ -51,7 +52,6 @@ const formatDateFull = (dateString: string) => {
 
 const generateId = () => Math.random().toString(36).substring(2, 9);
 
-// Status badge components
 const ClientStatusBadge = ({ status }: { status: ClientStatus }) => {
   const styles = {
     Active: 'bg-[#7DD3A6]/20 text-[#059669] dark:text-[#7DD3A6] border-[#7DD3A6]/30',
@@ -112,7 +112,7 @@ const TaskStatusBadge = ({ status }: { status: TaskStatus }) => {
   );
 };
 
-// Toast Component
+
 const ToastContainer = ({ toasts, removeToast }: { toasts: ReturnType<typeof useToast>['toasts']; removeToast: (id: string) => void }) => {
   return (
     <div className="fixed top-4 right-4 z-[100] space-y-2 pointer-events-none">
@@ -138,7 +138,7 @@ const ToastContainer = ({ toasts, removeToast }: { toasts: ReturnType<typeof use
   );
 };
 
-// Receipt/Invoice View Component
+
 const ReceiptView = ({ 
   receipt, 
   invoice, 
@@ -497,7 +497,7 @@ const BottomNav = ({
 };
 
 // Topbar Component
-const Topbar = ({ onMenuClick }: { onMenuClick: () => void }) => {
+const Topbar = ({ onMenuClick, onLogout }: { onMenuClick: () => void; onLogout: () => void }) => {
   const { theme, toggleTheme } = useTheme();
   
   return (
@@ -534,6 +534,12 @@ const Topbar = ({ onMenuClick }: { onMenuClick: () => void }) => {
         <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#F2C94C]/30 to-[#D4A93A]/30 flex items-center justify-center ml-1">
           <span className="text-[#D4A93A] dark:text-[#F2C94C] text-sm font-bold">KM</span>
         </div>
+        <button
+          onClick={onLogout}
+          className="px-3 py-2 rounded-xl text-sm text-[var(--text-muted)] hover:bg-[var(--hover-bg)] hover:text-[var(--text-main)]"
+        >
+          Log out
+        </button>
       </div>
     </header>
   );
@@ -2066,8 +2072,119 @@ const MessageBoardSection = ({
   );
 };
 
-// Main App Component
-function App() {
+type AuthUser = {
+  id: number;
+  username: string;
+  email: string;
+  role: string;
+};
+
+const API_BASE_URL = import.meta.env.VITE_API_URL ?? '';
+
+async function authRequest(path: string, options: RequestInit = {}) {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...options,
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data.error || 'Something went wrong. Please try again.');
+  }
+  return data;
+}
+
+const AuthPage = ({ onAuthenticated }: { onAuthenticated: (user: AuthUser) => void }) => {
+  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError('');
+    setMessage('');
+    setIsSubmitting(true);
+
+    try {
+      if (mode === 'register') {
+        await authRequest('/auth/signup', {
+          method: 'POST',
+          body: JSON.stringify({ username, email, password }),
+        });
+        setMode('login');
+        setPassword('');
+        setMessage('Account created. Sign in to continue.');
+      } else {
+        const user = await authRequest('/auth/login', {
+          method: 'POST',
+          body: JSON.stringify({ username, password }),
+        });
+        onAuthenticated(user);
+      }
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : 'Unable to complete the request.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <main className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center p-4">
+      <div className="grain-overlay" />
+      <form onSubmit={handleSubmit} className="w-full max-w-md bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-6 sm:p-8 shadow-2xl">
+        <div className="mb-8">
+          <p className="text-[#D4A93A] dark:text-[#F2C94C] text-sm font-semibold tracking-[0.2em]">ZENTRIO CRM</p>
+          <h1 className="text-3xl font-bold text-[var(--text-main)] mt-3">
+            {mode === 'login' ? 'Welcome back' : 'Create your account'}
+          </h1>
+          <p className="text-[var(--text-muted)] mt-2">
+            {mode === 'login' ? 'Sign in to access your workspace.' : 'Register to start managing your workspace.'}
+          </p>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="auth-username">Username</Label>
+            <Input id="auth-username" value={username} onChange={(event) => setUsername(event.target.value)} required minLength={4} maxLength={20} className="mt-2" />
+          </div>
+          {mode === 'register' && (
+            <div>
+              <Label htmlFor="auth-email">Email</Label>
+              <Input id="auth-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required className="mt-2" />
+            </div>
+          )}
+          <div>
+            <Label htmlFor="auth-password">Password</Label>
+            <Input id="auth-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} required minLength={8} maxLength={20} className="mt-2" />
+          </div>
+        </div>
+
+        {error && <p className="mt-4 text-sm text-[#E57A7A]">{error}</p>}
+        {message && <p className="mt-4 text-sm text-[#7DD3A6]">{message}</p>}
+
+        <Button type="submit" disabled={isSubmitting} className="w-full mt-6 bg-[#F2C94C] text-[#1a1a2e] hover:bg-[#D4A93A]">
+          {isSubmitting ? 'Please wait...' : mode === 'login' ? 'Sign in' : 'Create account'}
+        </Button>
+        <button
+          type="button"
+          onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setError(''); setMessage(''); }}
+          className="w-full mt-4 text-sm text-[var(--text-muted)] hover:text-[var(--text-main)]"
+        >
+          {mode === 'login' ? 'Need an account? Register' : 'Already have an account? Sign in'}
+        </button>
+      </form>
+    </main>
+  );
+};
+
+const CrmApp = ({ user, onLogout }: { user: AuthUser; onLogout: () => void }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { state, setView, addClient, updateClient, deleteClient, addLead, deleteLead, moveLead, addInvoice, updateInvoice, deleteInvoice, addReceipt, addTeamMember, deleteTeamMember, addTask, addMessage, pinMessage, unpinMessage } = useAppState();
   const { toasts, addToast, removeToast } = useToast();
@@ -2111,7 +2228,7 @@ function App() {
       
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-h-screen overflow-hidden">
-        <Topbar onMenuClick={() => setSidebarOpen(true)} />
+        <Topbar onMenuClick={() => setSidebarOpen(true)} onLogout={onLogout} />
         <div className="flex-1 overflow-y-auto scrollbar-thin p-3 sm:p-4 lg:p-6">
           <div className="max-w-7xl mx-auto">
             {renderContent()}
@@ -2123,6 +2240,29 @@ function App() {
       <BottomNav currentView={state.currentView} setView={setView} />
     </div>
   );
+};
+
+function App() {
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
+
+  useEffect(() => {
+    authRequest('/auth/me')
+      .then(setUser)
+      .catch(() => setUser(null))
+      .finally(() => setIsCheckingSession(false));
+  }, []);
+
+  const handleLogout = async () => {
+    await authRequest('/auth/logout', { method: 'POST' }).catch(() => undefined);
+    setUser(null);
+  };
+
+  if (isCheckingSession) {
+    return <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center text-[var(--text-muted)]">Checking session...</div>;
+  }
+
+  return user ? <CrmApp user={user} onLogout={handleLogout} /> : <AuthPage onAuthenticated={setUser} />;
 }
 
 export default App;
