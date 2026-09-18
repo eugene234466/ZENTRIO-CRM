@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { MdOutlineLightMode, MdOutlineDarkMode } from 'react-icons/md';
 import { useTheme } from '@/hooks/useTheme.tsx';
 import LoginForm from './LoginForm';
 import ForgotPasswordForm from './ForgotPasswordForm';
 import AcceptInviteForm from './AcceptInviteForm';
-import type { AuthUser } from '../../lib/authApi';
 import './auth.css';
 
 type View = 'login' | 'forgot' | 'invite';
+type AuthUser = Record<string, unknown>;
 
 interface AuthWrapperProps {
   onAuthenticated: (user: AuthUser) => void;
