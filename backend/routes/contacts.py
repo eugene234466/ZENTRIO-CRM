@@ -1,6 +1,15 @@
 from flask import Blueprint, request, jsonify
+from flask_login import login_required, current_user
+
 from extensions import db
 from models import Contacts
+from permissions import (
+    can,
+    ACTION_CLIENTS_VIEW,
+    ACTION_CLIENTS_ADD,
+    ACTION_CLIENTS_EDIT,
+    ACTION_CLIENTS_DELETE,
+)
 
 contacts_bp = Blueprint("contacts", __name__, url_prefix="/api/contacts")
 
@@ -14,27 +23,38 @@ def _contact_to_dict(contact):
         "phone": contact.phone,
         "email": contact.email,
         "address": contact.address,
+        "assigned_to_id": contact.assigned_to_id,
     }
 
 
 @contacts_bp.route("/", methods=["GET"])
+@login_required
 def list_contacts():
     contacts = Contacts.query.all()
-    return jsonify({"contacts": [_contact_to_dict(c) for c in contacts]}), 200
+    visible = [c for c in contacts if can(current_user, ACTION_CLIENTS_VIEW, c)]
+    return jsonify({"contacts": [_contact_to_dict(c) for c in visible]}), 200
 
 
 @contacts_bp.route("/<int:contact_id>", methods=["GET"])
+@login_required
 def get_contact(contact_id):
     contact = Contacts.query.get(contact_id)
     if not contact:
         return jsonify({"error": "Contact not found"}), 404
+
+    if not can(current_user, ACTION_CLIENTS_VIEW, contact):
+        return jsonify({"error": "You don't have access."}), 403
+
     return jsonify(_contact_to_dict(contact)), 200
 
 
 @contacts_bp.route("/", methods=["POST"])
+@login_required
 def create_contact():
-    data = request.get_json(silent=True) or {}
+    if not can(current_user, ACTION_CLIENTS_ADD):
+        return jsonify({"error": "You don't have access."}), 403
 
+    data = request.get_json(silent=True) or {}
     missing = [field for field in REQUIRED_FIELDS if not data.get(field)]
     if missing:
         return jsonify({"error": f"Missing required field(s): {', '.join(missing)}"}), 400
@@ -44,6 +64,7 @@ def create_contact():
         phone=data["phone"],
         email=data["email"],
         address=data["address"],
+        assigned_to_id=data.get("assigned_to_id") or current_user.id,
     )
     db.session.add(contact)
     db.session.commit()
@@ -52,10 +73,14 @@ def create_contact():
 
 
 @contacts_bp.route("/<int:contact_id>", methods=["PATCH"])
+@login_required
 def update_contact(contact_id):
     contact = Contacts.query.get(contact_id)
     if not contact:
         return jsonify({"error": "Contact not found"}), 404
+
+    if not can(current_user, ACTION_CLIENTS_EDIT, contact):
+        return jsonify({"error": "You don't have access."}), 403
 
     data = request.get_json(silent=True) or {}
 
@@ -63,16 +88,22 @@ def update_contact(contact_id):
         if field in data:
             setattr(contact, field, data[field])
 
-    db.session.commit()
+    if "assigned_to_id" in data:
+        contact.assigned_to_id = data["assigned_to_id"]
 
+    db.session.commit()
     return jsonify(_contact_to_dict(contact)), 200
 
 
 @contacts_bp.route("/<int:contact_id>", methods=["DELETE"])
+@login_required
 def delete_contact(contact_id):
     contact = Contacts.query.get(contact_id)
     if not contact:
         return jsonify({"error": "Contact not found"}), 404
+
+    if not can(current_user, ACTION_CLIENTS_DELETE, contact):
+        return jsonify({"error": "You don't have access."}), 403
 
     db.session.delete(contact)
     db.session.commit()

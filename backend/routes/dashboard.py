@@ -5,17 +5,27 @@ Bismark's part: Dashboard summary and recent activity aggregation.
 
 from datetime import datetime, timezone
 from flask import Blueprint, request, jsonify
+from flask_login import login_required, current_user
 from sqlalchemy import func
 
 from extensions import db
 from models import Deal
+from permissions import (
+    can,
+    ACTION_REVENUE,
+    ACTION_LEADS_VIEW,
+)
 
 dashboard_bp = Blueprint("dashboard", __name__)
 
 
 @dashboard_bp.route("/dashboard/summary", methods=["GET"])
+@login_required
 def get_dashboard_summary():
     """Return headline numbers for the dashboard."""
+    if not can(current_user, ACTION_REVENUE):
+        return jsonify({"error": "You don't have access."}), 403
+
     now = datetime.now(timezone.utc)
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
@@ -59,6 +69,7 @@ def get_dashboard_summary():
 
 
 @dashboard_bp.route("/dashboard/recent-activity", methods=["GET"])
+@login_required
 def get_recent_activity():
     """Return the most recently updated deals."""
     limit = request.args.get("limit", 10, type=int)
@@ -69,4 +80,5 @@ def get_recent_activity():
         .all()
     )
 
-    return jsonify([deal.to_dict() for deal in deals]), 200
+    visible = [d for d in deals if can(current_user, ACTION_LEADS_VIEW, d)]
+    return jsonify([deal.to_dict() for deal in visible]), 200

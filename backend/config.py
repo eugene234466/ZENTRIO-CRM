@@ -2,7 +2,6 @@ import os
 
 
 def _mysql_uri():
-    # Local-dev default; full DATABASE_URL override wins when set.
     user = os.environ.get("DB_USER", "zentrio")
     password = os.environ.get("DB_PASSWORD", "zentrio")
     host = os.environ.get("DB_HOST", "localhost")

@@ -7,21 +7,24 @@ from sqlalchemy import inspect, text
 from extensions import db, bcrypt, login_manager, cors
 from config import config_map
 from models import User
+
 from routes.auth import auth_bp
 from routes.contacts import contacts_bp
 from routes.pipeline import pipeline_bp
 from routes.leads import leads_bp
 from routes.dashboard import dashboard_bp
 
+from search import search_bp
+from notifications import notifications_bp
+
 load_dotenv()
 
 FRONTEND_DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"
-USER_ROLES = ("level 1", "level 2", "admin")
+USER_ROLES = ("owner", "admin", "manager", "staff", "accountant")
 
 
 def create_app(config_name="development"):
     app = Flask(__name__, static_folder=None)
-
     app.config.from_object(config_map[config_name])
 
     db.init_app(app)
@@ -35,14 +38,15 @@ def create_app(config_name="development"):
     app.register_blueprint(pipeline_bp, url_prefix="/api")
     app.register_blueprint(leads_bp, url_prefix="/api")
     app.register_blueprint(dashboard_bp, url_prefix="/api")
+    app.register_blueprint(search_bp, url_prefix="/api")
+    app.register_blueprint(notifications_bp, url_prefix="/api")
 
     with app.app_context():
-        # Preserve auth_backend's migration for the role column on existing DBs
         if inspect(db.engine).has_table("user"):
             columns = {column["name"] for column in inspect(db.engine).get_columns("user")}
             if "role" not in columns:
                 db.session.execute(
-                    text("ALTER TABLE `user` ADD COLUMN role VARCHAR(20) NOT NULL DEFAULT 'level 1'")
+                    text("ALTER TABLE `user` ADD COLUMN role VARCHAR(20) NOT NULL DEFAULT 'staff'")
                 )
                 db.session.commit()
         db.create_all()

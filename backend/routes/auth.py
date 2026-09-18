@@ -6,8 +6,14 @@ from werkzeug.datastructures import MultiDict
 from forms import SignUpForm, LoginForm
 from extensions import db, bcrypt
 from models import User
+from permissions import (
+    can,
+    role_of,
+    ACTION_USERS_ROLES,
+    ROLE_OWNER,
+)
 
-USER_ROLES = {"level 1", "level 2", "admin"}
+USER_ROLES = {"owner", "admin", "manager", "staff", "accountant"}
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
 
@@ -19,18 +25,6 @@ def _first_error(form):
     return "Invalid input."
 
 
-def admin_required(view):
-    @wraps(view)
-    @login_required
-    def wrapped(*args, **kwargs):
-        if current_user.role != "admin":
-            return jsonify({"error": "Admin access required."}), 403
-        return view(*args, **kwargs)
-
-    return wrapped
-
-
-# POST /auth/signup  endpoint to signup a user
 @auth_bp.route("/signup", methods=["POST"])
 def signup():
     data = request.get_json(silent=True) or {}
@@ -49,13 +43,12 @@ def signup():
         return jsonify({"error": "Email already registered. Please use a different one."}), 409
 
     hashed = bcrypt.generate_password_hash(password).decode("utf-8")
-    user = User(username=username, email=email, password=hashed, role="level 1")
+    user = User(username=username, email=email, password=hashed, role="staff")
     db.session.add(user)
     db.session.commit()
     return jsonify({"msg": "User created. Please log in.", "username": username, "email": email}), 201
 
 
-# POST /auth/login  endpoint to login a user
 @auth_bp.route("/login", methods=["POST"])
 def login():
     data = request.get_json(silent=True) or {}
@@ -76,27 +69,38 @@ def login():
 @auth_bp.route("/me", methods=["GET"])
 @login_required
 def me():
-    return jsonify({"id": current_user.id, "username": current_user.username, "email": current_user.email, "role": current_user.role}), 200
+    return jsonify({
+        "id": current_user.id,
+        "username": current_user.username,
+        "email": current_user.email,
+        "role": current_user.role,
+    }), 200
 
 
 @auth_bp.route("/users/<int:user_id>/role", methods=["PATCH"])
-@admin_required
+@login_required
 def update_role(user_id):
     data = request.get_json(silent=True) or {}
     role = str(data.get("role") or "").strip().lower()
+
     if role not in USER_ROLES:
-        return jsonify({"error": "Role must be level 1, level 2, or admin."}), 400
+        return jsonify({"error": "Role must be owner, admin, manager, staff, or accountant."}), 400
 
     user = User.query.get(user_id)
     if user is None:
         return jsonify({"error": "User not found."}), 404
+
+    if not can(current_user, ACTION_USERS_ROLES, user):
+        return jsonify({"error": "You don't have access."}), 403
+
+    if role == ROLE_OWNER and role_of(current_user) != ROLE_OWNER:
+        return jsonify({"error": "Only the Owner can hand over ownership."}), 403
 
     user.role = role
     db.session.commit()
     return jsonify({"msg": "Role updated.", "username": user.username, "role": user.role}), 200
 
 
-# POST /auth/logout  the endpoint to logout a user
 @auth_bp.route("/logout", methods=["POST"])
 @login_required
 def logout():
