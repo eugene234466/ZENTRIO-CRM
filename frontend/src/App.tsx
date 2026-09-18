@@ -1,31 +1,36 @@
 import { useState, useEffect, useRef } from 'react';
 
-import { 
-  LayoutDashboard, Users, Kanban, FileText, Receipt as ReceiptIcon, UsersRound, 
+import {
+  LayoutDashboard, Users, Kanban, FileText, Receipt as ReceiptIcon, UsersRound,
   MessageSquare, Plus, Search, Bell, Menu, X, Sun, Moon,
   Calendar, TrendingUp, Clock, CheckCircle, Eye, Download, Share2,
   AlertCircle, DollarSign, Filter, Edit, Trash2,
   Send, Pin, CheckCircle2, Circle,
   Clock3, Building2, GraduationCap, Heart, Briefcase, ChevronLeft
 } from 'lucide-react';
-import { 
+import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, AreaChart, Area
 } from 'recharts';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Textarea } from '@/components/ui/textarea';
 import { useAppState } from '@/hooks/useAppState';
 import { useToast } from '@/hooks/useToast';
-import { useTheme } from '@/hooks/useTheme.tsx';
-import type { Client, Lead, Invoice, Receipt, TeamMember, Message, Task, ClientType, ClientStatus, LeadStage, LeadTemperature, InvoiceStatus, TaskStatus, View } from '@/types';
 import './App.css';
+import { Sidebar } from '@/components/layout/Sidebar';
+import { DashboardSection } from '@/pages/DashboardSection';
+import { ClientsSection } from '@/pages/ClientsSection';
+import { LeadsSection } from '@/pages/LeadsSection';
+import { InvoicesSection } from '@/pages/InvoiceSection';
+import { ReceiptsSection } from '@/pages/ReceiptsSection';
+import { TeamSection } from '@/pages/TeamSection';
+import { MessageBoardSection } from '@/pages/MessageBoardSection';
+import { ProfileSection } from '@/pages/ProfileSection';
+
+
+
+
+
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -35,18 +40,18 @@ const formatCurrency = (amount: number) => {
 };
 
 const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString('en-GH', { 
-    year: 'numeric', 
-    month: 'short', 
-    day: 'numeric' 
+  return new Date(dateString).toLocaleDateString('en-GH', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
   });
 };
 
 const formatDateFull = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString('en-GH', { 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric' 
+  return new Date(dateString).toLocaleDateString('en-GH', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
   });
 };
 
@@ -119,11 +124,10 @@ const ToastContainer = ({ toasts, removeToast }: { toasts: ReturnType<typeof use
       {toasts.map((toast) => (
         <div
           key={toast.id}
-          className={`px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 min-w-[280px] max-w-[90vw] animate-slide-in pointer-events-auto ${
-            toast.type === 'success' ? 'bg-[#7DD3A6] text-white' :
+          className={`px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 min-w-[280px] max-w-[90vw] animate-slide-in pointer-events-auto ${toast.type === 'success' ? 'bg-[#7DD3A6] text-white' :
             toast.type === 'error' ? 'bg-[#E57A7A] text-white' :
-            'bg-[#F2C94C] text-[#1a1a2e]'
-          }`}
+              'bg-[#F2C94C] text-[#1a1a2e]'
+            }`}
         >
           {toast.type === 'success' && <CheckCircle className="w-5 h-5 flex-shrink-0" />}
           {toast.type === 'error' && <AlertCircle className="w-5 h-5 flex-shrink-0" />}
@@ -139,13 +143,13 @@ const ToastContainer = ({ toasts, removeToast }: { toasts: ReturnType<typeof use
 };
 
 
-const ReceiptView = ({ 
-  receipt, 
-  invoice, 
+const ReceiptView = ({
+  receipt,
+  invoice,
   onClose,
-  type 
-}: { 
-  receipt?: Receipt; 
+  type
+}: {
+  receipt?: Receipt;
   invoice?: Invoice;
   onClose: () => void;
   type: 'receipt' | 'invoice';
@@ -226,14 +230,14 @@ const ReceiptView = ({
             </h2>
           </div>
           <div className="flex items-center gap-2">
-            <button 
+            <button
               onClick={handleDownload}
               className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-[rgba(244,246,251,0.04)] text-gray-600 dark:text-[#A6A9B6]"
               title="Download"
             >
               <Download className="w-5 h-5" />
             </button>
-            <button 
+            <button
               onClick={handlePrint}
               className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-[rgba(244,246,251,0.04)] text-gray-600 dark:text-[#A6A9B6]"
               title="Print"
@@ -362,14 +366,14 @@ const ReceiptView = ({
 };
 
 // Sidebar Component
-const Sidebar = ({ 
-  currentView, 
-  setView, 
-  isOpen, 
-  setIsOpen 
-}: { 
-  currentView: View; 
-  setView: (view: View) => void; 
+const LegacySidebar = ({
+  currentView,
+  setView,
+  isOpen,
+  setIsOpen
+}: {
+  currentView: View;
+  setView: (view: View) => void;
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
 }) => {
@@ -387,12 +391,12 @@ const Sidebar = ({
     <>
       {/* Mobile overlay */}
       {isOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 z-40 lg:hidden"
           onClick={() => setIsOpen(false)}
         />
       )}
-      
+
       {/* Sidebar */}
       <aside className={`
         fixed lg:sticky top-0 left-0 h-screen w-[260px] bg-[var(--bg-secondary)] border-r border-[var(--border-color)]
@@ -424,8 +428,8 @@ const Sidebar = ({
                 className={`
                   w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium
                   transition-all duration-200
-                  ${isActive 
-                    ? 'bg-[#F2C94C]/15 text-[#D4A93A] dark:text-[#F2C94C]' 
+                  ${isActive
+                    ? 'bg-[#F2C94C]/15 text-[#D4A93A] dark:text-[#F2C94C]'
                     : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--hover-bg)]'
                   }
                 `}
@@ -455,11 +459,11 @@ const Sidebar = ({
 };
 
 // Bottom Navigation for Mobile
-const BottomNav = ({ 
-  currentView, 
-  setView 
-}: { 
-  currentView: View; 
+const BottomNav = ({
+  currentView,
+  setView
+}: {
+  currentView: View;
   setView: (view: View) => void;
 }) => {
   const navItems: { view: View; label: string; icon: React.ElementType }[] = [
@@ -480,11 +484,10 @@ const BottomNav = ({
             <button
               key={item.view}
               onClick={() => setView(item.view)}
-              className={`flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-colors ${
-                isActive 
-                  ? 'text-[#D4A93A] dark:text-[#F2C94C]' 
-                  : 'text-[var(--text-muted)]'
-              }`}
+              className={`flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-colors ${isActive
+                ? 'text-[#D4A93A] dark:text-[#F2C94C]'
+                : 'text-[var(--text-muted)]'
+                }`}
             >
               <Icon className="w-5 h-5" />
               <span className="text-[10px] font-medium">{item.label}</span>
@@ -499,11 +502,11 @@ const BottomNav = ({
 // Topbar Component
 const Topbar = ({ onMenuClick, onLogout }: { onMenuClick: () => void; onLogout: () => void }) => {
   const { theme, toggleTheme } = useTheme();
-  
+
   return (
     <header className="h-[64px] bg-[var(--bg-secondary)] border-b border-[var(--border-color)] flex items-center justify-between px-4 lg:px-6 sticky top-0 z-30">
       <div className="flex items-center gap-3">
-        <button 
+        <button
           onClick={onMenuClick}
           className="lg:hidden p-2.5 rounded-xl hover:bg-[var(--hover-bg)] text-[var(--text-muted)]"
         >
@@ -520,7 +523,7 @@ const Topbar = ({ onMenuClick, onLogout }: { onMenuClick: () => void; onLogout: 
       </div>
 
       <div className="flex items-center gap-2">
-        <button 
+        <button
           onClick={toggleTheme}
           className="p-2.5 rounded-xl hover:bg-[var(--hover-bg)] text-[var(--text-muted)] transition-colors"
           title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
@@ -546,7 +549,7 @@ const Topbar = ({ onMenuClick, onLogout }: { onMenuClick: () => void; onLogout: 
 };
 
 // Dashboard Section
-const DashboardSection = ({ state }: { state: ReturnType<typeof useAppState>['state'] }) => {
+const LegacyDashboardSection = ({ state }: { state: ReturnType<typeof useAppState>['state'] }) => {
   const heroRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -555,7 +558,7 @@ const DashboardSection = ({ state }: { state: ReturnType<typeof useAppState>['st
         { opacity: 0, y: 24 },
         { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out', delay: 0.2 }
       );
-      
+
       gsap.fromTo('.hero-subtitle',
         { opacity: 0, y: 20 },
         { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out', delay: 0.4 }
@@ -563,9 +566,9 @@ const DashboardSection = ({ state }: { state: ReturnType<typeof useAppState>['st
 
       gsap.fromTo('.kpi-card',
         { opacity: 0, y: 40, scale: 0.96 },
-        { 
-          opacity: 1, y: 0, scale: 1, 
-          duration: 0.7, 
+        {
+          opacity: 1, y: 0, scale: 1,
+          duration: 0.7,
           ease: 'power3.out',
           stagger: 0.12,
           delay: 0.5
@@ -685,14 +688,14 @@ const DashboardSection = ({ state }: { state: ReturnType<typeof useAppState>['st
                 <AreaChart data={revenueData}>
                   <defs>
                     <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#F2C94C" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#F2C94C" stopOpacity={0}/>
+                      <stop offset="5%" stopColor="#F2C94C" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#F2C94C" stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
                   <XAxis dataKey="name" stroke="var(--text-muted)" fontSize={12} />
-                  <YAxis stroke="var(--text-muted)" fontSize={12} tickFormatter={(v) => `₵${v/1000}k`} />
-                  <Tooltip 
+                  <YAxis stroke="var(--text-muted)" fontSize={12} tickFormatter={(v) => `₵${v / 1000}k`} />
+                  <Tooltip
                     contentStyle={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '12px' }}
                     formatter={(v: number) => formatCurrency(v)}
                   />
@@ -724,7 +727,7 @@ const DashboardSection = ({ state }: { state: ReturnType<typeof useAppState>['st
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip 
+                  <Tooltip
                     contentStyle={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '12px' }}
                   />
                 </PieChart>
@@ -751,16 +754,14 @@ const DashboardSection = ({ state }: { state: ReturnType<typeof useAppState>['st
             {state.invoices.slice(0, 3).map((invoice) => (
               <div key={invoice.id} className="flex items-center justify-between py-3 border-b border-[var(--border-color)] last:border-0">
                 <div className="flex items-center gap-3">
-                  <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center ${
-                    invoice.status === 'Paid' ? 'bg-[#7DD3A6]/10' :
+                  <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center ${invoice.status === 'Paid' ? 'bg-[#7DD3A6]/10' :
                     invoice.status === 'Overdue' ? 'bg-[#E57A7A]/10' :
-                    'bg-[#F2C94C]/10'
-                  }`}>
-                    <FileText className={`w-4 h-4 sm:w-5 sm:h-5 ${
-                      invoice.status === 'Paid' ? 'text-[#059669] dark:text-[#7DD3A6]' :
+                      'bg-[#F2C94C]/10'
+                    }`}>
+                    <FileText className={`w-4 h-4 sm:w-5 sm:h-5 ${invoice.status === 'Paid' ? 'text-[#059669] dark:text-[#7DD3A6]' :
                       invoice.status === 'Overdue' ? 'text-[#DC2626] dark:text-[#E57A7A]' :
-                      'text-[#B45309] dark:text-[#F2C94C]'
-                    }`} />
+                        'text-[#B45309] dark:text-[#F2C94C]'
+                      }`} />
                   </div>
                   <div>
                     <p className="text-sm font-medium text-[var(--text-main)]">{invoice.invoiceNumber}</p>
@@ -781,14 +782,14 @@ const DashboardSection = ({ state }: { state: ReturnType<typeof useAppState>['st
 };
 
 // Clients Section
-const ClientsSection = ({ 
-  state, 
-  addClient, 
-  updateClient, 
+const LegacyClientsSection = ({
+  state,
+  addClient,
+  updateClient,
   deleteClient,
-  addToast 
-}: { 
-  state: ReturnType<typeof useAppState>['state']; 
+  addToast
+}: {
+  state: ReturnType<typeof useAppState>['state'];
   addClient: (client: Client) => void;
   updateClient: (client: Client) => void;
   deleteClient: (id: string) => void;
@@ -801,7 +802,7 @@ const ClientsSection = ({
 
   const filteredClients = state.clients.filter(client => {
     const matchesSearch = client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         client.email.toLowerCase().includes(searchTerm.toLowerCase());
+      client.email.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = filterType === 'all' || client.type === filterType;
     return matchesSearch && matchesType;
   });
@@ -962,13 +963,13 @@ const ClientsSection = ({
                 <ClientStatusBadge status={client.status} />
               </div>
               <div className="flex items-center justify-end gap-2 mt-3 pt-3 border-t border-[var(--border-color)]">
-                <button 
+                <button
                   onClick={() => setEditingClient(client)}
                   className="p-2 rounded-lg hover:bg-[var(--hover-bg)] text-[var(--text-muted)]"
                 >
                   <Edit className="w-4 h-4" />
                 </button>
-                <button 
+                <button
                   onClick={() => handleDeleteClient(client.id)}
                   className="p-2 rounded-lg hover:bg-[#E57A7A]/10 text-[var(--text-muted)] hover:text-[#E57A7A]"
                 >
@@ -1016,7 +1017,7 @@ const ClientsSection = ({
                     <div className="flex items-center justify-end gap-2">
                       <Dialog>
                         <DialogTrigger asChild>
-                          <button 
+                          <button
                             onClick={() => setEditingClient(client)}
                             className="p-2 rounded-lg hover:bg-[var(--hover-bg)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors"
                           >
@@ -1031,33 +1032,33 @@ const ClientsSection = ({
                             <form onSubmit={handleUpdateClient} className="space-y-4 mt-4">
                               <div>
                                 <Label htmlFor="edit-name">Company Name</Label>
-                                <Input 
-                                  id="edit-name" 
-                                  name="name" 
+                                <Input
+                                  id="edit-name"
+                                  name="name"
                                   defaultValue={editingClient.name}
-                                  required 
-                                  className="bg-[var(--input-bg)] border-[var(--border-color)] text-[var(--text-main)]" 
+                                  required
+                                  className="bg-[var(--input-bg)] border-[var(--border-color)] text-[var(--text-main)]"
                                 />
                               </div>
                               <div>
                                 <Label htmlFor="edit-email">Email</Label>
-                                <Input 
-                                  id="edit-email" 
-                                  name="email" 
-                                  type="email" 
+                                <Input
+                                  id="edit-email"
+                                  name="email"
+                                  type="email"
                                   defaultValue={editingClient.email}
-                                  required 
-                                  className="bg-[var(--input-bg)] border-[var(--border-color)] text-[var(--text-main)]" 
+                                  required
+                                  className="bg-[var(--input-bg)] border-[var(--border-color)] text-[var(--text-main)]"
                                 />
                               </div>
                               <div>
                                 <Label htmlFor="edit-phone">Phone</Label>
-                                <Input 
-                                  id="edit-phone" 
-                                  name="phone" 
+                                <Input
+                                  id="edit-phone"
+                                  name="phone"
                                   defaultValue={editingClient.phone}
-                                  required 
-                                  className="bg-[var(--input-bg)] border-[var(--border-color)] text-[var(--text-main)]" 
+                                  required
+                                  className="bg-[var(--input-bg)] border-[var(--border-color)] text-[var(--text-main)]"
                                 />
                               </div>
                               <div className="grid grid-cols-2 gap-4">
@@ -1096,7 +1097,7 @@ const ClientsSection = ({
                           </DialogContent>
                         )}
                       </Dialog>
-                      <button 
+                      <button
                         onClick={() => handleDeleteClient(client.id)}
                         className="p-2 rounded-lg hover:bg-[#E57A7A]/10 text-[var(--text-muted)] hover:text-[#E57A7A] transition-colors"
                       >
@@ -1121,14 +1122,14 @@ const ClientsSection = ({
 };
 
 // Leads Pipeline Section
-const LeadsSection = ({ 
-  state, 
-  addLead, 
-  deleteLead, 
+const LegacyLeadsSection = ({
+  state,
+  addLead,
+  deleteLead,
   moveLead,
-  addToast 
-}: { 
-  state: ReturnType<typeof useAppState>['state']; 
+  addToast
+}: {
+  state: ReturnType<typeof useAppState>['state'];
   addLead: (lead: Lead) => void;
   deleteLead: (id: string) => void;
   moveLead: (id: string, stage: LeadStage) => void;
@@ -1246,7 +1247,7 @@ const LeadsSection = ({
         {stages.map((stage) => {
           const stageLeads = state.leads.filter(l => l.stage === stage);
           return (
-            <div 
+            <div
               key={stage}
               className={`min-w-[280px] sm:min-w-[300px] flex-1 max-w-[350px] bg-[var(--card-bg)] rounded-2xl border-t-4 ${getStageColor(stage)} p-3 sm:p-4`}
               onDragOver={handleDragOver}
@@ -1275,7 +1276,7 @@ const LeadsSection = ({
                     </div>
                     <div className="flex items-center justify-between mt-3">
                       <p className="text-sm font-mono text-[#D4A93A] dark:text-[#F2C94C]">{formatCurrency(lead.value)}</p>
-                      <button 
+                      <button
                         onClick={() => {
                           deleteLead(lead.id);
                           addToast('Lead deleted', 'success');
@@ -1302,14 +1303,14 @@ const LeadsSection = ({
 };
 
 // Invoices Section
-const InvoicesSection = ({ 
-  state, 
-  addInvoice, 
-  updateInvoice, 
+const LegacyInvoicesSection = ({
+  state,
+  addInvoice,
+  updateInvoice,
   deleteInvoice,
-  addToast 
-}: { 
-  state: ReturnType<typeof useAppState>['state']; 
+  addToast
+}: {
+  state: ReturnType<typeof useAppState>['state'];
   addInvoice: (invoice: Invoice) => void;
   updateInvoice: (invoice: Invoice) => void;
   deleteInvoice: (id: string) => void;
@@ -1416,12 +1417,12 @@ const InvoicesSection = ({
 
               <div>
                 <Label htmlFor="dueDate">Due Date</Label>
-                <Input 
-                  id="dueDate" 
-                  name="dueDate" 
-                  type="date" 
-                  required 
-                  className="bg-[var(--input-bg)] border-[var(--border-color)] text-[var(--text-main)]" 
+                <Input
+                  id="dueDate"
+                  name="dueDate"
+                  type="date"
+                  required
+                  className="bg-[var(--input-bg)] border-[var(--border-color)] text-[var(--text-main)]"
                 />
               </div>
 
@@ -1504,18 +1505,16 @@ const InvoicesSection = ({
             <CardContent className="p-4 sm:p-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-start gap-3 sm:gap-4">
-                  <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                    invoice.status === 'Paid' ? 'bg-[#7DD3A6]/10' :
+                  <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${invoice.status === 'Paid' ? 'bg-[#7DD3A6]/10' :
                     invoice.status === 'Overdue' ? 'bg-[#E57A7A]/10' :
-                    invoice.status === 'Sent' ? 'bg-[#F2C94C]/10' :
-                    'bg-gray-100 dark:bg-[#A6A9B6]/10'
-                  }`}>
-                    <FileText className={`w-5 h-5 sm:w-6 sm:h-6 ${
-                      invoice.status === 'Paid' ? 'text-[#059669] dark:text-[#7DD3A6]' :
+                      invoice.status === 'Sent' ? 'bg-[#F2C94C]/10' :
+                        'bg-gray-100 dark:bg-[#A6A9B6]/10'
+                    }`}>
+                    <FileText className={`w-5 h-5 sm:w-6 sm:h-6 ${invoice.status === 'Paid' ? 'text-[#059669] dark:text-[#7DD3A6]' :
                       invoice.status === 'Overdue' ? 'text-[#DC2626] dark:text-[#E57A7A]' :
-                      invoice.status === 'Sent' ? 'text-[#B45309] dark:text-[#F2C94C]' :
-                      'text-gray-500 dark:text-[#A6A9B6]'
-                    }`} />
+                        invoice.status === 'Sent' ? 'text-[#B45309] dark:text-[#F2C94C]' :
+                          'text-gray-500 dark:text-[#A6A9B6]'
+                      }`} />
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
@@ -1538,7 +1537,7 @@ const InvoicesSection = ({
                 <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4">
                   <p className="text-xl sm:text-2xl font-bold text-[#D4A93A] dark:text-[#F2C94C] font-mono">{formatCurrency(invoice.total)}</p>
                   <div className="flex items-center gap-1 sm:gap-2">
-                    <button 
+                    <button
                       onClick={() => setViewingInvoice(invoice)}
                       className="p-2 rounded-lg hover:bg-[var(--hover-bg)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors"
                       title="View"
@@ -1546,8 +1545,8 @@ const InvoicesSection = ({
                       <Eye className="w-4 h-4 sm:w-5 sm:h-5" />
                     </button>
                     {invoice.status !== 'Paid' && (
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         onClick={() => handleMarkAsPaid(invoice)}
                         className="bg-[#7DD3A6] text-white hover:bg-[#6bc795] text-xs"
                       >
@@ -1555,7 +1554,7 @@ const InvoicesSection = ({
                         Pay
                       </Button>
                     )}
-                    <button 
+                    <button
                       onClick={() => {
                         deleteInvoice(invoice.id);
                         addToast('Invoice deleted', 'success');
@@ -1580,7 +1579,7 @@ const InvoicesSection = ({
 
       {/* View Invoice Modal */}
       {viewingInvoice && (
-        <ReceiptView 
+        <ReceiptView
           invoice={viewingInvoice}
           type="invoice"
           onClose={() => setViewingInvoice(null)}
@@ -1591,12 +1590,12 @@ const InvoicesSection = ({
 };
 
 // Receipts Section
-const ReceiptsSection = ({ 
-  state, 
+const LegacyReceiptsSection = ({
+  state,
   addReceipt,
-  addToast 
-}: { 
-  state: ReturnType<typeof useAppState>['state']; 
+  addToast
+}: {
+  state: ReturnType<typeof useAppState>['state'];
   addReceipt: (receipt: Receipt) => void;
   addToast: (message: string, type: 'success' | 'error' | 'info') => void;
 }) => {
@@ -1607,7 +1606,7 @@ const ReceiptsSection = ({
 
   const handleGenerateReceipt = () => {
     if (!selectedInvoice) return;
-    
+
     const newReceipt: Receipt = {
       id: generateId(),
       invoiceId: selectedInvoice.id,
@@ -1618,7 +1617,7 @@ const ReceiptsSection = ({
       paymentMethod: 'Bank Transfer',
       generatedAt: new Date().toISOString(),
     };
-    
+
     addReceipt(newReceipt);
     setSelectedInvoice(null);
     addToast('Receipt generated successfully', 'success');
@@ -1655,7 +1654,7 @@ const ReceiptsSection = ({
                 </SelectContent>
               </Select>
             </div>
-            
+
             {selectedInvoice && (
               <div className="bg-[var(--input-bg)] rounded-xl p-4 space-y-2">
                 <div className="flex justify-between text-sm">
@@ -1676,8 +1675,8 @@ const ReceiptsSection = ({
                 </div>
               </div>
             )}
-            
-            <Button 
+
+            <Button
               onClick={handleGenerateReceipt}
               disabled={!selectedInvoice}
               className="w-full bg-[#F2C94C] text-white hover:bg-[#D4A93A] disabled:opacity-50"
@@ -1696,8 +1695,8 @@ const ReceiptsSection = ({
           <CardContent className="px-4 sm:px-6">
             <div className="space-y-3">
               {state.receipts.map((receipt) => (
-                <div 
-                  key={receipt.id} 
+                <div
+                  key={receipt.id}
                   onClick={() => setViewingReceipt(receipt)}
                   className="flex items-center justify-between p-3 sm:p-4 bg-[var(--input-bg)] rounded-xl cursor-pointer hover:border-[#F2C94C]/30 border border-transparent transition-colors"
                 >
@@ -1724,7 +1723,7 @@ const ReceiptsSection = ({
 
       {/* View Receipt Modal */}
       {viewingReceipt && (
-        <ReceiptView 
+        <ReceiptView
           receipt={viewingReceipt}
           type="receipt"
           onClose={() => setViewingReceipt(null)}
@@ -1735,14 +1734,14 @@ const ReceiptsSection = ({
 };
 
 // Team Section
-const TeamSection = ({ 
-  state, 
-  addTeamMember, 
-  deleteTeamMember, 
+const LegacyTeamSection = ({
+  state,
+  addTeamMember,
+  deleteTeamMember,
   addTask,
-  addToast 
-}: { 
-  state: ReturnType<typeof useAppState>['state']; 
+  addToast
+}: {
+  state: ReturnType<typeof useAppState>['state'];
   addTeamMember: (member: TeamMember) => void;
   deleteTeamMember: (id: string) => void;
   addTask: (memberId: string, task: Task) => void;
@@ -1855,7 +1854,7 @@ const TeamSection = ({
                 </div>
                 <div className="flex items-center gap-2">
                   <div className={`w-2.5 h-2.5 rounded-full ${getStatusColor(member.status)}`} />
-                  <button 
+                  <button
                     onClick={() => {
                       deleteTeamMember(member.id);
                       addToast('Team member removed', 'success');
@@ -1872,7 +1871,7 @@ const TeamSection = ({
                   <p className="text-xs sm:text-sm text-[var(--text-muted)]">Tasks ({member.tasks.length})</p>
                   <Dialog>
                     <DialogTrigger asChild>
-                      <button 
+                      <button
                         onClick={() => setTaskModalMember(member)}
                         className="text-xs text-[#D4A93A] dark:text-[#F2C94C] hover:underline"
                       >
@@ -1918,14 +1917,14 @@ const TeamSection = ({
 };
 
 // Message Board Section
-const MessageBoardSection = ({ 
-  state, 
-  addMessage, 
-  pinMessage, 
+const LegacyMessageBoardSection = ({
+  state,
+  addMessage,
+  pinMessage,
   unpinMessage,
-  addToast 
-}: { 
-  state: ReturnType<typeof useAppState>['state']; 
+  addToast
+}: {
+  state: ReturnType<typeof useAppState>['state'];
   addMessage: (message: Message) => void;
   pinMessage: (id: string) => void;
   unpinMessage: (id: string) => void;
@@ -1935,7 +1934,7 @@ const MessageBoardSection = ({
 
   const handlePostMessage = () => {
     if (!newMessage.trim()) return;
-    
+
     const message: Message = {
       id: generateId(),
       author: 'Spirit',
@@ -1944,7 +1943,7 @@ const MessageBoardSection = ({
       timestamp: new Date().toISOString(),
       isPinned: false,
     };
-    
+
     addMessage(message);
     setNewMessage('');
     addToast('Message posted', 'success');
@@ -1991,7 +1990,7 @@ const MessageBoardSection = ({
                 className="bg-[var(--input-bg)] border-[var(--border-color)] text-[var(--text-main)] resize-none min-h-[80px] sm:min-h-[100px]"
               />
               <div className="flex justify-end">
-                <Button 
+                <Button
                   onClick={handlePostMessage}
                   disabled={!newMessage.trim()}
                   className="bg-[#F2C94C] text-white hover:bg-[#D4A93A] disabled:opacity-50"
@@ -2027,7 +2026,7 @@ const MessageBoardSection = ({
                     </div>
                     <p className="text-[var(--text-main)] text-sm sm:text-base">{message.content}</p>
                   </div>
-                  <button 
+                  <button
                     onClick={() => handleTogglePin(message)}
                     className="p-2 rounded-lg hover:bg-[#F2C94C]/10 text-[#D4A93A] dark:text-[#F2C94C] transition-colors flex-shrink-0"
                   >
@@ -2057,7 +2056,7 @@ const MessageBoardSection = ({
                   </div>
                   <p className="text-[var(--text-main)] text-sm sm:text-base">{message.content}</p>
                 </div>
-                <button 
+                <button
                   onClick={() => handleTogglePin(message)}
                   className="p-2 rounded-lg hover:bg-[var(--hover-bg)] text-[var(--text-muted)] hover:text-[#D4A93A] dark:hover:text-[#F2C94C] transition-colors flex-shrink-0"
                 >
@@ -2186,25 +2185,30 @@ const AuthPage = ({ onAuthenticated }: { onAuthenticated: (user: AuthUser) => vo
 
 const CrmApp = ({ user, onLogout }: { user: AuthUser; onLogout: () => void }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { state, setView, addClient, updateClient, deleteClient, addLead, deleteLead, moveLead, addInvoice, updateInvoice, deleteInvoice, addReceipt, addTeamMember, deleteTeamMember, addTask, addMessage, pinMessage, unpinMessage } = useAppState();
+  const [clientSearch, setClientSearch] = useState('');
+  const { state, setView, addClient, updateClient, deleteClient, addLead, updateLead, deleteLead, moveLead, addInvoice, updateInvoice, deleteInvoice, addReceipt, addTeamMember, deleteTeamMember, addTask, addMessage, pinMessage, unpinMessage } = useAppState();
   const { toasts, addToast, removeToast } = useToast();
+
+  const isAdmin = user.role === 'admin' || user.role === 'owner';
 
   const renderContent = () => {
     switch (state.currentView) {
       case 'dashboard':
         return <DashboardSection state={state} />;
       case 'clients':
-        return <ClientsSection state={state} addClient={addClient} updateClient={updateClient} deleteClient={deleteClient} addToast={addToast} />;
+        return <ClientsSection state={state} addClient={addClient} updateClient={updateClient} deleteClient={deleteClient} addToast={addToast} searchTerm={clientSearch} onSearchChange={setClientSearch} />;
       case 'leads':
-        return <LeadsSection state={state} addLead={addLead} deleteLead={deleteLead} moveLead={moveLead} addToast={addToast} />;
+        return <LeadsSection state={state} addLead={addLead} updateLead={updateLead} deleteLead={deleteLead} moveLead={moveLead} addClient={addClient} addToast={addToast} />;
       case 'invoices':
-        return <InvoicesSection state={state} addInvoice={addInvoice} updateInvoice={updateInvoice} deleteInvoice={deleteInvoice} addToast={addToast} />;
+        return <InvoicesSection state={state} addInvoice={addInvoice} updateInvoice={updateInvoice} deleteInvoice={deleteInvoice} addToast={addToast} isAdmin={isAdmin} />;
       case 'receipts':
-        return <ReceiptsSection state={state} addReceipt={addReceipt} addToast={addToast} />;
+        return <ReceiptsSection state={state} addReceipt={addReceipt} addToast={addToast} isAdmin={isAdmin} />;
       case 'team':
-        return <TeamSection state={state} addTeamMember={addTeamMember} deleteTeamMember={deleteTeamMember} addTask={addTask} addToast={addToast} />;
+        return <TeamSection state={state} addTeamMember={addTeamMember} deleteTeamMember={deleteTeamMember} addTask={addTask} addToast={addToast} isAdmin={isAdmin} />;
       case 'board':
-        return <MessageBoardSection state={state} addMessage={addMessage} pinMessage={pinMessage} unpinMessage={unpinMessage} addToast={addToast} />;
+        return <MessageBoardSection state={state} addMessage={addMessage} pinMessage={pinMessage} unpinMessage={unpinMessage} addToast={addToast} currentUser={user} />;
+      case 'profile':
+        return <ProfileSection addToast={addToast} />;
       default:
         return <DashboardSection state={state} />;
     }
@@ -2214,18 +2218,19 @@ const CrmApp = ({ user, onLogout }: { user: AuthUser; onLogout: () => void }) =>
     <div className="min-h-screen bg-[var(--bg-primary)] flex">
       {/* Grain Overlay */}
       <div className="grain-overlay" />
-      
+
       {/* Toast Container */}
       <ToastContainer toasts={toasts} removeToast={removeToast} />
-      
+
       {/* Sidebar */}
-      <Sidebar 
-        currentView={state.currentView} 
-        setView={setView} 
+      <Sidebar
+        currentView={state.currentView}
+        setView={setView}
         isOpen={sidebarOpen}
         setIsOpen={setSidebarOpen}
+        user={user}
       />
-      
+
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-h-screen overflow-hidden">
         <Topbar onMenuClick={() => setSidebarOpen(true)} onLogout={onLogout} />

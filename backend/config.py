@@ -1,8 +1,8 @@
 import os
+from datetime import timedelta
 
 
 def _mysql_uri():
-    # Local-dev default; full DATABASE_URL override wins when set.
     user = os.environ.get("DB_USER", "zentrio")
     password = os.environ.get("DB_PASSWORD", "zentrio")
     host = os.environ.get("DB_HOST", "localhost")
@@ -18,6 +18,10 @@ class Config:
         "pool_pre_ping": True,
         "pool_recycle": 280,
     }
+    RATELIMIT_ENABLED = True
+    RATELIMIT_STORAGE_URI = os.environ.get("RATELIMIT_STORAGE_URI", "memory://")
+    # Office machines stay logged in: cap every session at 8 hours.
+    PERMANENT_SESSION_LIFETIME = timedelta(hours=8)
 
 
 class DevelopmentConfig(Config):

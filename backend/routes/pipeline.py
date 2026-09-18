@@ -5,9 +5,15 @@ Eugene's part: Pipeline stage-transition logic for the Leads/Pipeline module.
 
 from datetime import datetime, timezone
 from flask import Blueprint, request, jsonify
+from flask_login import login_required, current_user
 
 from extensions import db
-from models import Deal, StageLog
+from models import Deal, StageLog, live
+from permissions import (
+    can,
+    ACTION_LEADS_VIEW,
+    ACTION_LEADS_MOVE,
+)
 
 pipeline_bp = Blueprint("pipeline", __name__)
 
@@ -18,8 +24,8 @@ ALLOWED_TRANSITIONS = {
     "NEW": ["CONTACTED", "LOST"],
     "CONTACTED": ["PROPOSAL", "LOST"],
     "PROPOSAL": ["WON", "LOST"],
-    "WON": [],   # terminal state
-    "LOST": [],  # terminal state
+    "WON": [],  # terminal state
+    "LOST": [], # terminal state
 }
 
 
@@ -31,6 +37,7 @@ def can_transition(current_stage: str, new_stage: str) -> bool:
 
 
 @pipeline_bp.route("/deals/<int:deal_id>/stage", methods=["PATCH"])
+@login_required
 def move_deal_stage(deal_id):
     """Move a deal to a new pipeline stage, enforcing valid transitions."""
     data = request.get_json(silent=True) or {}
@@ -39,9 +46,12 @@ def move_deal_stage(deal_id):
     if not new_stage:
         return jsonify({"error": "Missing 'stage' in request body"}), 400
 
-    deal = Deal.query.get(deal_id)
+    deal = live(Deal).filter_by(id=deal_id).first()
     if not deal:
         return jsonify({"error": "Deal not found"}), 404
+
+    if not can(current_user, ACTION_LEADS_MOVE, deal):
+        return jsonify({"error": "You don't have access."}), 403
 
     old_stage = deal.stage
 
@@ -62,29 +72,34 @@ def move_deal_stage(deal_id):
 
     db.session.add(log_entry)
     db.session.commit()
-
     return jsonify(deal.to_dict()), 200
 
 
 @pipeline_bp.route("/pipeline", methods=["GET"])
+@login_required
 def get_pipeline_view():
     """Return open deals grouped by stage, for rendering the pipeline board."""
     open_stages = ["NEW", "CONTACTED", "PROPOSAL"]
-    deals = Deal.query.filter(Deal.stage.in_(open_stages)).all()
+    deals = live(Deal).filter(Deal.stage.in_(open_stages)).all()
 
     grouped = {stage: [] for stage in open_stages}
     for deal in deals:
-        grouped[deal.stage].append(deal.to_dict())
+        if can(current_user, ACTION_LEADS_VIEW, deal):
+            grouped[deal.stage].append(deal.to_dict())
 
     return jsonify(grouped), 200
 
 
 @pipeline_bp.route("/deals/<int:deal_id>/history", methods=["GET"])
+@login_required
 def get_stage_history(deal_id):
     """Return the stage-change audit trail for a single deal."""
-    deal = Deal.query.get(deal_id)
+    deal = live(Deal).filter_by(id=deal_id).first()
     if not deal:
         return jsonify({"error": "Deal not found"}), 404
+
+    if not can(current_user, ACTION_LEADS_VIEW, deal):
+        return jsonify({"error": "You don't have access."}), 403
 
     logs = (
         StageLog.query

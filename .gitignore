@@ -1,4 +1,6 @@
+﻿.env
+.postman/
+postman/
 __pycache__/
-*.py[cod]
-.DS_Store
+*.pyc
 node_modules

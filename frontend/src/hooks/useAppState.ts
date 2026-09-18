@@ -1,9 +1,35 @@
-import { useReducer, useCallback } from 'react';
+import { useReducer, useCallback, useEffect, useRef } from 'react';
 import type { Client, Lead, Invoice, Receipt, TeamMember, Message, Task, LeadStage, View } from '@/types';
 import { appReducer, initialState } from '@/store/reducer';
+import { loadState, saveState } from '@/store/storage';
 
 export function useAppState() {
   const [state, dispatch] = useReducer(appReducer, initialState);
+  const hasHydrated = useRef(false);
+
+  // Load saved data once on mount, replacing the sample-data initial state.
+  useEffect(() => {
+    let cancelled = false;
+    loadState().then((loaded) => {
+      if (cancelled) return;
+      dispatch({ type: 'HYDRATE', payload: loaded });
+      hasHydrated.current = true;
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Persist on every change, but only after the initial load has completed —
+  // otherwise we'd briefly overwrite real saved data with the sample data.
+  useEffect(() => {
+    if (!hasHydrated.current) return;
+    saveState(state).catch(() => {
+      // A visible error toast for a failed save belongs to B2, once there's a
+      // real server that can fail; for localStorage this realistically only
+      // happens if storage is full or unavailable (e.g. private browsing).
+    });
+  }, [state]);
 
   const setView = useCallback((view: View) => {
     dispatch({ type: 'SET_VIEW', payload: view });
