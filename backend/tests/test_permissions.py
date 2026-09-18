@@ -38,34 +38,35 @@ from permissions import (
 
 
 
-# Section 5 of the brief, row by row.
+# Section 5 of the brief, row by row, as revised for small-team use:
+# manager is retired (no permissions), export_csv is owner/admin-only.
 # Format: (action, owner, admin, manager, staff, accountant)
 # The "Own" means: allowed only on records assigned to that staff member.
 # The "View" means: allowed to view, but not add/edit.
 
 PERMISSION_TABLE = [
-    (ACTION_REVENUE,         True,  True,  True,  False, True),
-    (ACTION_CLIENTS_VIEW,    True,  True,  True,  "Own", "View"),
-    (ACTION_CLIENTS_ADD,     True,  True,  True,  "Own", False),
-    (ACTION_CLIENTS_EDIT,    True,  True,  True,  "Own", False),
-    (ACTION_CLIENTS_DELETE,  True,  True,  True,  False, False),
-    (ACTION_LEADS_VIEW,      True,  True,  True,  "Own", False),
-    (ACTION_LEADS_ADD,       True,  True,  True,  "Own", False),
-    (ACTION_LEADS_EDIT,      True,  True,  True,  "Own", False),
-    (ACTION_LEADS_MOVE,      True,  True,  True,  "Own", False),
-    (ACTION_LEADS_DELETE,    True,  True,  True,  False, False),
-    (ACTION_ASSIGN,          True,  True,  True,  False, False),
-    (ACTION_INVOICES_VIEW,   True,  True,  True,  "Own", True),
-    (ACTION_INVOICES_CREATE, True,  True,  True,  "Own", True),
+    (ACTION_REVENUE,         True,  True,  False, False, True),
+    (ACTION_CLIENTS_VIEW,    True,  True,  False, "Own", "View"),
+    (ACTION_CLIENTS_ADD,     True,  True,  False, "Own", False),
+    (ACTION_CLIENTS_EDIT,    True,  True,  False, "Own", False),
+    (ACTION_CLIENTS_DELETE,  True,  True,  False, False, False),
+    (ACTION_LEADS_VIEW,      True,  True,  False, "Own", False),
+    (ACTION_LEADS_ADD,       True,  True,  False, "Own", False),
+    (ACTION_LEADS_EDIT,      True,  True,  False, "Own", False),
+    (ACTION_LEADS_MOVE,      True,  True,  False, "Own", False),
+    (ACTION_LEADS_DELETE,    True,  True,  False, False, False),
+    (ACTION_ASSIGN,          True,  True,  False, False, False),
+    (ACTION_INVOICES_VIEW,   True,  True,  False, "Own", True),
+    (ACTION_INVOICES_CREATE, True,  True,  False, "Own", True),
     (ACTION_INVOICES_SEND,   True,  True,  False, False, True),
     (ACTION_INVOICES_VOID,   True,  True,  False, False, False),
     (ACTION_TEAM_MANAGE,     True,  True,  False, False, False),
     (ACTION_OWN_TASKS,       True,  True,  True,  True,  True),
     (ACTION_OWN_MESSAGES,    True,  True,  True,  True,  True),
-    (ACTION_PIN_MESSAGES,    True,  True,  True,  False, False),
+    (ACTION_PIN_MESSAGES,    True,  True,  False, False, False),
     (ACTION_SETTINGS,        True,  True,  False, False, False),
     (ACTION_USERS_ROLES,     True,  True,  False, False, False),
-    (ACTION_EXPORT_CSV,      True,  True,  False, False, True),
+    (ACTION_EXPORT_CSV,      True,  True,  False, False, False),
     (ACTION_IMPORT_CLIENTS,  True,  True,  False, False, False),
     (ACTION_BACKUP,          True,  False, False, False, False),
     (ACTION_OWN_ACCOUNT,     True,  True,  True,  True,  True),

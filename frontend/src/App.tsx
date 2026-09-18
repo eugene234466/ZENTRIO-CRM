@@ -30,6 +30,7 @@ gsap.registerPlugin(ScrollTrigger);
 // Main App Component
 function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [clientSearch, setClientSearch] = useState('');
   const { state, setView, addClient, updateClient, deleteClient, addLead, updateLead, deleteLead, moveLead, addInvoice, updateInvoice, deleteInvoice, addReceipt, addTeamMember, deleteTeamMember, addTask, addMessage, pinMessage, unpinMessage } = useAppState();
   const { toasts, addToast, removeToast } = useToast();
   const { user, loading } = useAuth();
@@ -58,20 +59,22 @@ function App() {
     );
   }
 
+  const isAdmin = user.role === 'admin' || user.role === 'owner';
+
   const renderContent = () => {
     switch (state.currentView) {
       case 'dashboard':
         return <DashboardSection state={state} />;
       case 'clients':
-        return <ClientsSection state={state} addClient={addClient} updateClient={updateClient} deleteClient={deleteClient} addToast={addToast} />;
+        return <ClientsSection state={state} addClient={addClient} updateClient={updateClient} deleteClient={deleteClient} addToast={addToast} searchTerm={clientSearch} onSearchChange={setClientSearch} />;
       case 'leads':
         return <LeadsSection state={state} addLead={addLead} updateLead={updateLead} deleteLead={deleteLead} moveLead={moveLead} addClient={addClient} addToast={addToast} />;
       case 'invoices':
-        return <InvoicesSection state={state} addInvoice={addInvoice} updateInvoice={updateInvoice} deleteInvoice={deleteInvoice} addToast={addToast} />;
+        return <InvoicesSection state={state} addInvoice={addInvoice} updateInvoice={updateInvoice} deleteInvoice={deleteInvoice} addToast={addToast} isAdmin={isAdmin} />;
       case 'receipts':
-        return <ReceiptsSection state={state} addReceipt={addReceipt} addToast={addToast} />;
+        return <ReceiptsSection state={state} addReceipt={addReceipt} addToast={addToast} isAdmin={isAdmin} />;
       case 'team':
-        return <TeamSection state={state} addTeamMember={addTeamMember} deleteTeamMember={deleteTeamMember} addTask={addTask} addToast={addToast} isAdmin={user.role === 'admin' || user.role === 'owner'} />;
+        return <TeamSection state={state} addTeamMember={addTeamMember} deleteTeamMember={deleteTeamMember} addTask={addTask} addToast={addToast} isAdmin={isAdmin} />;
       case 'board':
         return <MessageBoardSection state={state} addMessage={addMessage} pinMessage={pinMessage} unpinMessage={unpinMessage} addToast={addToast} currentUser={user} />;
       case 'profile':
@@ -100,7 +103,21 @@ function App() {
       
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-h-screen overflow-hidden">
-        <Topbar onMenuClick={() => setSidebarOpen(true)} user={user} onGoProfile={() => setView('profile')} />
+        <Topbar
+          onMenuClick={() => setSidebarOpen(true)}
+          user={user}
+          onGoProfile={() => setView('profile')}
+          onPickSearchResult={(result) => {
+            if (result.type === 'client') {
+              setClientSearch(result.title);
+              setView('clients');
+            } else if (result.type === 'lead') {
+              setView('leads');
+            } else {
+              setView('invoices');
+            }
+          }}
+        />
         <div className="flex-1 overflow-y-auto scrollbar-thin p-3 sm:p-4 lg:p-6">
           <div className="max-w-7xl mx-auto">
             {renderContent()}

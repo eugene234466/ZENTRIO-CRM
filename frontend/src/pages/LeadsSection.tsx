@@ -14,6 +14,7 @@ import { useAppState } from '@/hooks/useAppState';
 import type { Lead, LeadStage, LeadTemperature, LeadSource, Client } from '@/types';
 import { formatCurrency, generateId } from '@/lib/format';
 import { LeadTemperatureBadge } from '@/components/statusBadge';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 
 const stages: LeadStage[] = ['New', 'Contacted', 'Qualified', 'Proposal Sent', 'Won', 'Lost'];
 const sources: LeadSource[] = ['Referral', 'Social', 'Direct', 'Other'];
@@ -39,6 +40,14 @@ export const LeadsSection = ({
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
   const [draggedLead, setDraggedLead] = useState<string | null>(null);
   const [wonLeadPendingConversion, setWonLeadPendingConversion] = useState<Lead | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+
+  const confirmDeleteLead = () => {
+    if (!pendingDeleteId) return;
+    deleteLead(pendingDeleteId);
+    setPendingDeleteId(null);
+    addToast('Lead deleted', 'success');
+  };
 
   const handleAddLead = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -311,10 +320,7 @@ export const LeadsSection = ({
                           <Pencil className="w-3.5 h-3.5" />
                         </button>
                         <button
-                          onClick={() => {
-                            deleteLead(lead.id);
-                            addToast('Lead deleted', 'success');
-                          }}
+                          onClick={() => setPendingDeleteId(lead.id)}
                           className="p-1.5 rounded-lg hover:bg-[#E57A7A]/10 text-[var(--text-muted)] hover:text-[#E57A7A] transition-colors"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -333,6 +339,15 @@ export const LeadsSection = ({
           );
         })}
       </div>
+
+      <ConfirmDialog
+        open={pendingDeleteId !== null}
+        onOpenChange={(open) => !open && setPendingDeleteId(null)}
+        title="Delete this lead?"
+        description="The lead will be removed from the pipeline. Admins can restore it from the audit trail."
+        confirmLabel="Delete lead"
+        onConfirm={confirmDeleteLead}
+      />
     </div>
   );
 };

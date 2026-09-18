@@ -3,6 +3,11 @@ from flask_login import UserMixin
 from extensions import db, bcrypt
 
 
+def live(model):
+    """Base query for a soft-deletable model, excluding deleted rows."""
+    return model.query.filter(model.deleted_at.is_(None))
+
+
 class User(db.Model, UserMixin):
     __tablename__ = "user"
 
@@ -26,6 +31,7 @@ class Contacts(db.Model):
         db.DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
     )
+    deleted_at = db.Column(db.DateTime(timezone=True))
 
 
 class Deal(db.Model):
@@ -45,6 +51,7 @@ class Deal(db.Model):
         db.DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
     )
+    deleted_at = db.Column(db.DateTime(timezone=True))
 
     def to_dict(self):
         return {
@@ -78,6 +85,7 @@ class Invoice(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     invoice_number = db.Column(db.String(40), nullable=False, unique=True)
     client_name = db.Column(db.String(120), nullable=False)
+    client_id = db.Column(db.Integer, db.ForeignKey("contacts.id"))
     due_date = db.Column(db.Date)
     status = db.Column(db.String(20), default="draft")
     total = db.Column(db.Float, default=0)
@@ -132,3 +140,19 @@ class NotificationPreference(db.Model):
     assigned_leads = db.Column(db.Boolean, default=True)
     assigned_tasks = db.Column(db.Boolean, default=True)
     pinned_messages = db.Column(db.Boolean, default=True)
+
+
+class AuditLog(db.Model):
+    __tablename__ = "audit_log"
+
+    id = db.Column(db.Integer, primary_key=True)
+    actor_id = db.Column(db.Integer, db.ForeignKey("user.id"))
+    action = db.Column(db.String(60), nullable=False)
+    target_type = db.Column(db.String(60), default="")
+    target_id = db.Column(db.Integer)
+    detail = db.Column(db.String(500), default="")
+    created_at = db.Column(
+        db.DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )

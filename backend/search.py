@@ -26,6 +26,19 @@ try:
 except ImportError:
     Invoice = None
 
+try:
+    from models import live
+except ImportError:
+    def live(model):
+        return model.query
+
+
+def _escape_like(value):
+    """Escape LIKE wildcards so the query matches user input literally."""
+    return (
+        value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+    )
+
 
 @search_bp.route("/search", methods=["GET"])
 @login_required
@@ -36,14 +49,18 @@ def search():
         return jsonify({"results": []}), 200
 
     results = []
-    like = f"%{q}%"
+    # Bound parameter via the ORM (never interpolated into SQL), with LIKE
+    # wildcards escaped so user input only ever matches literally.
+    like = f"%{_escape_like(q)}%"
+    escape = "\\"
 
     if Client is not None:
-        clients = Client.query.filter(
+        clients = live(Client).filter(
             or_(
-                Client.name.ilike(like),
-                Client.email.ilike(like),
-                Client.phone.ilike(like),
+                Client.name.ilike(like, escape=escape),
+                Client.email.ilike(like, escape=escape),
+                Client.phone.ilike(like, escape=escape),
+                Client.address.ilike(like, escape=escape),
             )
         ).limit(20).all()
 
@@ -58,10 +75,10 @@ def search():
                 })
 
     if Lead is not None:
-        leads = Lead.query.filter(
+        leads = live(Lead).filter(
             or_(
-                Lead.title.ilike(like),
-                Lead.stage.ilike(like),
+                Lead.title.ilike(like, escape=escape),
+                Lead.stage.ilike(like, escape=escape),
             )
         ).limit(20).all()
 
@@ -77,7 +94,10 @@ def search():
 
     if Invoice is not None:
         invoices = Invoice.query.filter(
-            Invoice.invoice_number.ilike(like)
+            or_(
+                Invoice.invoice_number.ilike(like, escape=escape),
+                Invoice.client_name.ilike(like, escape=escape),
+            )
         ).limit(20).all()
 
         for row in invoices:

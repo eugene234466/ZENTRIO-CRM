@@ -1,10 +1,10 @@
 import os
 from pathlib import Path
-from flask import Flask, abort, send_from_directory
+from flask import Flask, abort, jsonify, send_from_directory
 from dotenv import load_dotenv
 from sqlalchemy import inspect, text
 
-from extensions import db, bcrypt, login_manager, cors
+from extensions import db, bcrypt, login_manager, cors, limiter
 from config import config_map
 from models import User
 
@@ -13,6 +13,7 @@ from routes.contacts import contacts_bp
 from routes.pipeline import pipeline_bp
 from routes.leads import leads_bp
 from routes.dashboard import dashboard_bp
+from routes.audit_log import audit_bp
 
 from search import search_bp
 from notifications import notifications_bp
@@ -32,12 +33,15 @@ def create_app(config_name="development"):
     login_manager.init_app(app)
     login_manager.login_view = "login"
     cors.init_app(app, supports_credentials=True, origins=["http://localhost:5173"])
+    limiter.init_app(app)
+    app.register_error_handler(429, rate_limit_exceeded)
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(contacts_bp)
     app.register_blueprint(pipeline_bp, url_prefix="/api")
     app.register_blueprint(leads_bp, url_prefix="/api")
     app.register_blueprint(dashboard_bp, url_prefix="/api")
+    app.register_blueprint(audit_bp, url_prefix="/api")
     app.register_blueprint(search_bp, url_prefix="/api")
     app.register_blueprint(notifications_bp, url_prefix="/api")
 
@@ -78,3 +82,7 @@ def load_user(user_id):
 @login_manager.unauthorized_handler
 def unauthorized():
     return {"error": "Login required."}, 401
+
+
+def rate_limit_exceeded(e):
+    return jsonify({"error": "Too many requests. Please slow down."}), 429

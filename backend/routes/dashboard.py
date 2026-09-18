@@ -9,7 +9,7 @@ from flask_login import login_required, current_user
 from sqlalchemy import func
 
 from extensions import db
-from models import Deal
+from models import Deal, live
 from permissions import (
     can,
     ACTION_REVENUE,
@@ -29,27 +29,29 @@ def get_dashboard_summary():
     now = datetime.now(timezone.utc)
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
-    total_deals = Deal.query.count()
+    total_deals = live(Deal).count()
 
     open_value = (
         db.session.query(func.coalesce(func.sum(Deal.value), 0))
+        .filter(Deal.deleted_at.is_(None))
         .filter(Deal.stage.notin_(["WON", "LOST"]))
         .scalar()
     )
 
-    won_this_month = Deal.query.filter(
+    won_this_month = live(Deal).filter(
         Deal.stage == "WON", Deal.updated_at >= month_start
     ).count()
 
-    lost_this_month = Deal.query.filter(
+    lost_this_month = live(Deal).filter(
         Deal.stage == "LOST", Deal.updated_at >= month_start
     ).count()
 
-    won_total = Deal.query.filter(Deal.stage == "WON").count()
+    won_total = live(Deal).filter(Deal.stage == "WON").count()
     conversion_rate = (won_total / total_deals * 100) if total_deals else 0
 
     stage_counts = (
         db.session.query(Deal.stage, func.count(Deal.id), func.coalesce(func.sum(Deal.value), 0))
+        .filter(Deal.deleted_at.is_(None))
         .group_by(Deal.stage)
         .all()
     )
@@ -75,7 +77,7 @@ def get_recent_activity():
     limit = request.args.get("limit", 10, type=int)
 
     deals = (
-        Deal.query.order_by(Deal.updated_at.desc())
+        live(Deal).order_by(Deal.updated_at.desc())
         .limit(limit)
         .all()
     )

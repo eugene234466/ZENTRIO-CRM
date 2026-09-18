@@ -64,6 +64,7 @@ ACTION_EXPORT_CSV = "export_csv"
 ACTION_IMPORT_CLIENTS = "import_clients"
 ACTION_BACKUP = "backup"
 ACTION_OWN_ACCOUNT = "own_account"
+ACTION_AUDIT_VIEW = "audit_view"
 
 OPEN_ACTIONS = {
     ACTION_OWN_TASKS,
@@ -72,22 +73,9 @@ OPEN_ACTIONS = {
 }
 
 ROLE_PERMISSIONS = {
-    ROLE_MANAGER: {
-        ACTION_REVENUE,
-        ACTION_CLIENTS_VIEW,
-        ACTION_CLIENTS_ADD,
-        ACTION_CLIENTS_EDIT,
-        ACTION_CLIENTS_DELETE,
-        ACTION_LEADS_VIEW,
-        ACTION_LEADS_ADD,
-        ACTION_LEADS_EDIT,
-        ACTION_LEADS_MOVE,
-        ACTION_LEADS_DELETE,
-        ACTION_ASSIGN,
-        ACTION_INVOICES_VIEW,
-        ACTION_INVOICES_CREATE,
-        ACTION_PIN_MESSAGES,
-    },
+    # NOTE: the manager role is retired for small-team use (no permissions;
+    # assign admin instead). The key is kept so old rows fail closed.
+    ROLE_MANAGER: set(),
     ROLE_STAFF: {
         ACTION_CLIENTS_VIEW,
         ACTION_CLIENTS_ADD,
@@ -105,7 +93,6 @@ ROLE_PERMISSIONS = {
         ACTION_INVOICES_VIEW,
         ACTION_INVOICES_CREATE,
         ACTION_INVOICES_SEND,
-        ACTION_EXPORT_CSV,
     },
 }
 

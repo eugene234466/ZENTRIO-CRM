@@ -11,6 +11,7 @@ import { useAppState } from '@/hooks/useAppState';
 import type { TeamMember, Task } from '@/types';
 import { generateId } from '@/lib/format';
 import { TaskStatusBadge } from '@/components/statusBadge';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 
 export const TeamSection = ({ 
   state, 
@@ -29,6 +30,14 @@ export const TeamSection = ({
 }) => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [taskModalMember, setTaskModalMember] = useState<TeamMember | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+
+  const confirmRemoveMember = () => {
+    if (!pendingDeleteId || !isAdmin) return;
+    deleteTeamMember(pendingDeleteId);
+    setPendingDeleteId(null);
+    addToast('Team member removed', 'success');
+  };
 
   const handleAddMember = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -139,10 +148,7 @@ export const TeamSection = ({
                   <div className={`w-2.5 h-2.5 rounded-full ${getStatusColor(member.status)}`} />
                   {isAdmin && (
                   <button
-                    onClick={() => {
-                      deleteTeamMember(member.id);
-                      addToast('Team member removed', 'success');
-                    }}
+                    onClick={() => setPendingDeleteId(member.id)}
                     title="Remove team member"
                     className="p-1.5 rounded-lg hover:bg-[#E57A7A]/10 text-[var(--text-muted)] hover:text-[#E57A7A] transition-colors"
                   >
@@ -198,6 +204,15 @@ export const TeamSection = ({
           </Card>
         ))}
       </div>
+
+      <ConfirmDialog
+        open={pendingDeleteId !== null}
+        onOpenChange={(open) => !open && setPendingDeleteId(null)}
+        title="Remove this team member?"
+        description="They will be removed from the team list along with their tasks."
+        confirmLabel="Remove member"
+        onConfirm={confirmRemoveMember}
+      />
     </div>
   );
 };

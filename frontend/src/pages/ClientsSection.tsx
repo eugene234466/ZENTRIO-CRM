@@ -10,24 +10,29 @@ import { useAppState } from '@/hooks/useAppState';
 import type { Client, ClientType, ClientStatus } from '@/types';
 import { generateId } from '@/lib/format';
 import { ClientStatusBadge } from '@/components/statusBadge';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 
 export  const ClientsSection = ({ 
   state, 
   addClient, 
   updateClient, 
   deleteClient,
-  addToast 
+  addToast,
+  searchTerm,
+  onSearchChange,
 }: { 
   state: ReturnType<typeof useAppState>['state']; 
   addClient: (client: Client) => void;
   updateClient: (client: Client) => void;
   deleteClient: (id: string) => void;
   addToast: (message: string, type: 'success' | 'error' | 'info') => void;
+  searchTerm: string;
+  onSearchChange: (value: string) => void;
 }) => {
-  const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<ClientType | 'all'>('all');
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   const filteredClients = state.clients.filter(client => {
     const matchesSearch = client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -73,6 +78,7 @@ export  const ClientsSection = ({
 
   const handleDeleteClient = (id: string) => {
     deleteClient(id);
+    setPendingDeleteId(null);
     addToast('Client deleted successfully', 'success');
   };
 
@@ -156,7 +162,7 @@ export  const ClientsSection = ({
           <Input
             placeholder="Search clients..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => onSearchChange(e.target.value)}
             className="pl-10 bg-[var(--card-bg)] border-[var(--border-color)] text-[var(--text-main)]"
           />
         </div>
@@ -199,7 +205,7 @@ export  const ClientsSection = ({
                   <Edit className="w-4 h-4" />
                 </button>
                 <button 
-                  onClick={() => handleDeleteClient(client.id)}
+                  onClick={() => setPendingDeleteId(client.id)}
                   className="p-2 rounded-lg hover:bg-[#E57A7A]/10 text-[var(--text-muted)] hover:text-[#E57A7A]"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -327,7 +333,7 @@ export  const ClientsSection = ({
                         )}
                       </Dialog>
                       <button 
-                        onClick={() => handleDeleteClient(client.id)}
+                        onClick={() => setPendingDeleteId(client.id)}
                         className="p-2 rounded-lg hover:bg-[#E57A7A]/10 text-[var(--text-muted)] hover:text-[#E57A7A] transition-colors"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -346,6 +352,15 @@ export  const ClientsSection = ({
           </div>
         )}
       </Card>
+
+      <ConfirmDialog
+        open={pendingDeleteId !== null}
+        onOpenChange={(open) => !open && setPendingDeleteId(null)}
+        title="Delete this client?"
+        description="The client will be removed from your workspace. Admins can restore it from the audit trail."
+        confirmLabel="Delete client"
+        onConfirm={() => pendingDeleteId && handleDeleteClient(pendingDeleteId)}
+      />
     </div>
   );
 };

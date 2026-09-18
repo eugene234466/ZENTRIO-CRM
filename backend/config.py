@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 
 
 def _mysql_uri():
@@ -17,6 +18,10 @@ class Config:
         "pool_pre_ping": True,
         "pool_recycle": 280,
     }
+    RATELIMIT_ENABLED = True
+    RATELIMIT_STORAGE_URI = os.environ.get("RATELIMIT_STORAGE_URI", "memory://")
+    # Office machines stay logged in: cap every session at 8 hours.
+    PERMANENT_SESSION_LIFETIME = timedelta(hours=8)
 
 
 class DevelopmentConfig(Config):

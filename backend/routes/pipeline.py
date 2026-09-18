@@ -8,7 +8,7 @@ from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
 
 from extensions import db
-from models import Deal, StageLog
+from models import Deal, StageLog, live
 from permissions import (
     can,
     ACTION_LEADS_VIEW,
@@ -46,7 +46,7 @@ def move_deal_stage(deal_id):
     if not new_stage:
         return jsonify({"error": "Missing 'stage' in request body"}), 400
 
-    deal = Deal.query.get(deal_id)
+    deal = live(Deal).filter_by(id=deal_id).first()
     if not deal:
         return jsonify({"error": "Deal not found"}), 404
 
@@ -80,7 +80,7 @@ def move_deal_stage(deal_id):
 def get_pipeline_view():
     """Return open deals grouped by stage, for rendering the pipeline board."""
     open_stages = ["NEW", "CONTACTED", "PROPOSAL"]
-    deals = Deal.query.filter(Deal.stage.in_(open_stages)).all()
+    deals = live(Deal).filter(Deal.stage.in_(open_stages)).all()
 
     grouped = {stage: [] for stage in open_stages}
     for deal in deals:
@@ -94,7 +94,7 @@ def get_pipeline_view():
 @login_required
 def get_stage_history(deal_id):
     """Return the stage-change audit trail for a single deal."""
-    deal = Deal.query.get(deal_id)
+    deal = live(Deal).filter_by(id=deal_id).first()
     if not deal:
         return jsonify({"error": "Deal not found"}), 404
 

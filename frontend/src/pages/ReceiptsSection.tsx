@@ -14,11 +14,13 @@ import { ReceiptView } from '@/components/layout/ReceiptView';
 export const ReceiptsSection = ({ 
   state, 
   addReceipt,
-  addToast 
+  addToast,
+  isAdmin,
 }: { 
   state: ReturnType<typeof useAppState>['state']; 
   addReceipt: (receipt: Receipt) => void;
   addToast: (message: string, type: 'success' | 'error' | 'info') => void;
+  isAdmin: boolean;
 }) => {
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [viewingReceipt, setViewingReceipt] = useState<Receipt | null>(null);
@@ -69,6 +71,7 @@ export const ReceiptsSection = ({
     <div className="space-y-4 sm:space-y-6 pb-20 lg:pb-0">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <h2 className="text-xl sm:text-2xl font-bold text-[var(--text-main)]">Receipt Generator</h2>
+        {isAdmin && (
         <div className="flex gap-2">
           <Button
             variant="outline"
@@ -89,6 +92,7 @@ export const ReceiptsSection = ({
             PDF
           </Button>
         </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">

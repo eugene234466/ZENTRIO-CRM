@@ -88,7 +88,9 @@ def list_notifications():
             )
 
     if pref.assigned_leads and Lead is not None:
-        leads = Lead.query.filter_by(assigned_to_id=current_user.id).all()
+        leads = Lead.query.filter_by(assigned_to_id=current_user.id).filter(
+            Lead.deleted_at.is_(None)
+        ).all()
 
         for lead in leads:
             if not can(current_user, ACTION_LEADS_VIEW, lead):

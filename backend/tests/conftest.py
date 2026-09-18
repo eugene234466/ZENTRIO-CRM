@@ -16,6 +16,7 @@ def app():
     app = create_app("development")
     app.config["TESTING"] = True
     app.config["WTF_CSRF_ENABLED"] = False
+    app.config["RATELIMIT_ENABLED"] = False
 
     with app.app_context():
         db.drop_all()

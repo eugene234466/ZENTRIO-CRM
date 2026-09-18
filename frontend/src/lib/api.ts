@@ -57,7 +57,18 @@ export const api = {
 
   markAllNotificationsRead: () =>
     request<{ msg: string }>('/api/notifications/read-all', { method: 'PATCH' }),
+
+  search: (q: string) =>
+    request<{ results: SearchResult[] }>(`/api/search?q=${encodeURIComponent(q)}`),
 };
+
+export interface SearchResult {
+  type: 'client' | 'lead' | 'invoice';
+  id: number;
+  title: string;
+  subtitle: string;
+  link: string;
+}
 
 export interface AppNotification {
   id: number;
