@@ -27,7 +27,7 @@ gsap.registerPlugin(ScrollTrigger);
 // Main App Component
 function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { state, setView, addClient, updateClient, deleteClient, addLead, deleteLead, moveLead, addInvoice, updateInvoice, deleteInvoice, addReceipt, addTeamMember, deleteTeamMember, addTask, addMessage, pinMessage, unpinMessage } = useAppState();
+  const { state, setView, addClient, updateClient, deleteClient, addLead, updateLead, deleteLead, moveLead, addInvoice, updateInvoice, deleteInvoice, addReceipt, addTeamMember, deleteTeamMember, addTask, addMessage, pinMessage, unpinMessage } = useAppState();
   const { toasts, addToast, removeToast } = useToast();
 
   const renderContent = () => {
@@ -37,7 +37,7 @@ function App() {
       case 'clients':
         return <ClientsSection state={state} addClient={addClient} updateClient={updateClient} deleteClient={deleteClient} addToast={addToast} />;
       case 'leads':
-        return <LeadsSection state={state} addLead={addLead} deleteLead={deleteLead} moveLead={moveLead} addToast={addToast} />;
+        return <LeadsSection state={state} addLead={addLead} updateLead={updateLead} deleteLead={deleteLead} moveLead={moveLead} addClient={addClient} addToast={addToast} />;
       case 'invoices':
         return <InvoicesSection state={state} addInvoice={addInvoice} updateInvoice={updateInvoice} deleteInvoice={deleteInvoice} addToast={addToast} />;
       case 'receipts':
