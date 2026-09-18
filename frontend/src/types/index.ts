@@ -105,7 +105,7 @@ export interface Message {
 }
 
 // App State
-export type View = 'dashboard' | 'clients' | 'leads' | 'invoices' | 'receipts' | 'team' | 'board';
+export type View = 'dashboard' | 'clients' | 'leads' | 'invoices' | 'receipts' | 'team' | 'board' | 'profile';
 
 export interface AppState {
   currentView: View;

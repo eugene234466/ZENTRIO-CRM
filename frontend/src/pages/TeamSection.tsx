@@ -17,19 +17,22 @@ export const TeamSection = ({
   addTeamMember, 
   deleteTeamMember, 
   addTask,
-  addToast 
+  addToast,
+  isAdmin,
 }: { 
   state: ReturnType<typeof useAppState>['state']; 
   addTeamMember: (member: TeamMember) => void;
   deleteTeamMember: (id: string) => void;
   addTask: (memberId: string, task: Task) => void;
   addToast: (message: string, type: 'success' | 'error' | 'info') => void;
+  isAdmin: boolean;
 }) => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [taskModalMember, setTaskModalMember] = useState<TeamMember | null>(null);
 
   const handleAddMember = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!isAdmin) return;
     const formData = new FormData(e.currentTarget);
     const newMember: TeamMember = {
       id: generateId(),
@@ -71,6 +74,7 @@ export const TeamSection = ({
     <div className="space-y-4 sm:space-y-6 pb-20 lg:pb-0">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <h2 className="text-xl sm:text-2xl font-bold text-[var(--text-main)]">Team</h2>
+        {isAdmin && (
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
             <Button className="bg-[#F2C94C] text-white hover:bg-[#D4A93A] font-medium w-full sm:w-auto">
@@ -111,6 +115,7 @@ export const TeamSection = ({
             </form>
           </DialogContent>
         </Dialog>
+        )}
       </div>
 
       {/* Team Grid */}
@@ -132,15 +137,18 @@ export const TeamSection = ({
                 </div>
                 <div className="flex items-center gap-2">
                   <div className={`w-2.5 h-2.5 rounded-full ${getStatusColor(member.status)}`} />
-                  <button 
+                  {isAdmin && (
+                  <button
                     onClick={() => {
                       deleteTeamMember(member.id);
                       addToast('Team member removed', 'success');
                     }}
+                    title="Remove team member"
                     className="p-1.5 rounded-lg hover:bg-[#E57A7A]/10 text-[var(--text-muted)] hover:text-[#E57A7A] transition-colors"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
+                  )}
                 </div>
               </div>
 

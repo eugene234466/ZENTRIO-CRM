@@ -130,17 +130,6 @@ export const LeadsSection = ({
     }
   };
 
-  const getStageColor = (stage: LeadStage) => {
-    switch (stage) {
-      case 'New': return 'border-gray-400 dark:border-[#A6A9B6]';
-      case 'Contacted': return 'border-[#F2C94C]';
-      case 'Qualified': return 'border-[#7DD3A6]';
-      case 'Proposal Sent': return 'border-[#F2C94C]';
-      case 'Won': return 'border-[#7DD3A6]';
-      case 'Lost': return 'border-[#E57A7A]';
-    }
-  };
-
   const leadFormFields = (defaults?: Lead) => (
     <>
       <div>
@@ -262,15 +251,15 @@ export const LeadsSection = ({
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Kanban Board - Horizontal scroll on mobile */}
-      <div className="flex gap-3 sm:gap-4 overflow-x-auto pb-4 scrollbar-thin -mx-4 px-4 sm:mx-0 sm:px-0">
+      {/* Pipeline stages — stacked single column */}
+      <div className="flex flex-col gap-3 sm:gap-4">
         {stages.map((stage) => {
           const stageLeads = state.leads.filter(l => l.stage === stage);
           const stageValue = stageLeads.reduce((sum, l) => sum + l.value, 0);
           return (
             <div
               key={stage}
-              className={`min-w-[280px] sm:min-w-[300px] flex-1 max-w-[350px] bg-[var(--card-bg)] rounded-2xl border-t-4 ${getStageColor(stage)} p-3 sm:p-4`}
+              className="w-full bg-[var(--card-bg)] rounded-2xl border border-[var(--border-color)] p-3 sm:p-4"
               onDragOver={handleDragOver}
               onDrop={(e) => handleDrop(e, stage)}
             >

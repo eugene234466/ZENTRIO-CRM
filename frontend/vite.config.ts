@@ -12,4 +12,10 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  server: {
+    proxy: {
+      '/auth': 'http://localhost:5000',
+      '/api': 'http://localhost:5000',
+    },
+  },
 });

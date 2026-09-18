@@ -100,21 +100,21 @@ export  const ClientsSection = ({
             <DialogHeader>
               <DialogTitle className="text-xl">Add New Client</DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleAddClient} className="space-y-4 mt-4">
-              <div>
+            <form onSubmit={handleAddClient} className="space-y-5 mt-6">
+              <div className="space-y-2">
                 <Label htmlFor="name">Company Name</Label>
                 <Input id="name" name="name" required className="bg-[var(--input-bg)] border-[var(--border-color)] text-[var(--text-main)]" />
               </div>
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input id="email" name="email" type="email" required className="bg-[var(--input-bg)] border-[var(--border-color)] text-[var(--text-main)]" />
               </div>
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="phone">Phone</Label>
                 <Input id="phone" name="phone" required className="bg-[var(--input-bg)] border-[var(--border-color)] text-[var(--text-main)]" />
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="type">Type</Label>
                   <Select name="type" defaultValue="SME">
                     <SelectTrigger className="bg-[var(--input-bg)] border-[var(--border-color)] text-[var(--text-main)]">
@@ -128,7 +128,7 @@ export  const ClientsSection = ({
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="status">Status</Label>
                   <Select name="status" defaultValue="Lead">
                     <SelectTrigger className="bg-[var(--input-bg)] border-[var(--border-color)] text-[var(--text-main)]">
@@ -258,8 +258,8 @@ export  const ClientsSection = ({
                             <DialogHeader>
                               <DialogTitle className="text-xl">Edit Client</DialogTitle>
                             </DialogHeader>
-                            <form onSubmit={handleUpdateClient} className="space-y-4 mt-4">
-                              <div>
+                            <form onSubmit={handleUpdateClient} className="space-y-5 mt-6">
+                              <div className="space-y-2">
                                 <Label htmlFor="edit-name">Company Name</Label>
                                 <Input 
                                   id="edit-name" 
@@ -269,7 +269,7 @@ export  const ClientsSection = ({
                                   className="bg-[var(--input-bg)] border-[var(--border-color)] text-[var(--text-main)]" 
                                 />
                               </div>
-                              <div>
+                              <div className="space-y-2">
                                 <Label htmlFor="edit-email">Email</Label>
                                 <Input 
                                   id="edit-email" 
@@ -280,7 +280,7 @@ export  const ClientsSection = ({
                                   className="bg-[var(--input-bg)] border-[var(--border-color)] text-[var(--text-main)]" 
                                 />
                               </div>
-                              <div>
+                              <div className="space-y-2">
                                 <Label htmlFor="edit-phone">Phone</Label>
                                 <Input 
                                   id="edit-phone" 
@@ -291,7 +291,7 @@ export  const ClientsSection = ({
                                 />
                               </div>
                               <div className="grid grid-cols-2 gap-4">
-                                <div>
+                                <div className="space-y-2">
                                   <Label htmlFor="edit-type">Type</Label>
                                   <Select name="type" defaultValue={editingClient.type}>
                                     <SelectTrigger className="bg-[var(--input-bg)] border-[var(--border-color)] text-[var(--text-main)]">
@@ -305,7 +305,7 @@ export  const ClientsSection = ({
                                     </SelectContent>
                                   </Select>
                                 </div>
-                                <div>
+                                <div className="space-y-2">
                                   <Label htmlFor="edit-status">Status</Label>
                                   <Select name="status" defaultValue={editingClient.status}>
                                     <SelectTrigger className="bg-[var(--input-bg)] border-[var(--border-color)] text-[var(--text-main)]">
