@@ -5,6 +5,7 @@ export type ClientStatus = 'Active' | 'Lead' | 'Prospect';
 export interface Client {
   id: string;
   name: string;
+  company?: string;
   email: string;
   phone: string;
   type: ClientType;
@@ -17,6 +18,8 @@ export interface Client {
 export type LeadStage = 'New' | 'Contacted' | 'Qualified' | 'Proposal Sent' | 'Won' | 'Lost';
 export type LeadTemperature = 'Hot' | 'Warm' | 'Cold';
 
+export type LeadSource = 'Referral' | 'Social' | 'Direct' | 'Other';
+
 export interface Lead {
   id: string;
   name: string;
@@ -25,6 +28,9 @@ export interface Lead {
   value: number;
   stage: LeadStage;
   temperature: LeadTemperature;
+  source: LeadSource;
+  expectedCloseDate?: string;
+  notes?: string;
   createdAt: string;
   updatedAt: string;
 }
