@@ -13,6 +13,9 @@ export const initialState: AppState = {
 
 export function appReducer(state: AppState, action: Action): AppState {
   switch (action.type) {
+    case 'HYDRATE':
+      return action.payload;
+
     case 'SET_VIEW':
       return { ...state, currentView: action.payload };
 

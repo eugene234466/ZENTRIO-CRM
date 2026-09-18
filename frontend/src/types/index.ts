@@ -124,6 +124,7 @@ export type Action =
   | { type: 'ADD_INVOICE'; payload: Invoice }
   | { type: 'UPDATE_INVOICE'; payload: Invoice }
   | { type: 'DELETE_INVOICE'; payload: string }
+  | { type: 'HYDRATE'; payload: AppState }
   | { type: 'ADD_RECEIPT'; payload: Receipt }
   | { type: 'ADD_TEAM_MEMBER'; payload: TeamMember }
   | { type: 'UPDATE_TEAM_MEMBER'; payload: TeamMember }
