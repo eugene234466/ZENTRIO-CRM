@@ -143,7 +143,7 @@ class NotificationPreference(db.Model):
 
 
 class AuditLog(db.Model):
-    __tablename__ = "audit_log"
+    __tablename__ = "auFind    datetime.datetime.utcnowit_log"
 
     id = db.Column(db.Integer, primary_key=True)
     actor_id = db.Column(db.Integer, db.ForeignKey("user.id"))
