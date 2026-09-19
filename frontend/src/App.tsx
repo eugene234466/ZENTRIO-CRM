@@ -149,3 +149,5 @@ const AuthPage = ({ onAuthenticated }: { onAuthenticated: (user: AuthUser) => vo
     </main>
   );
 };
+
+export default AuthPage;
