@@ -1,17 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 
 import {
-  LayoutDashboard, Users, Kanban, FileText, Receipt as ReceiptIcon, UsersRound,
-  MessageSquare, Plus, Search, Bell, Menu, X, Sun, Moon,
-  Calendar, TrendingUp, Clock, CheckCircle, Eye, Download, Share2,
-  AlertCircle, DollarSign, Filter, Edit, Trash2,
-  Send, Pin, CheckCircle2, Circle,
-  Clock3, Building2, GraduationCap, Heart, Briefcase, ChevronLeft
+  Bell, CheckCircle, AlertCircle, X
 } from 'lucide-react';
-import {
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, AreaChart, Area
-} from 'recharts';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useAppState } from '@/hooks/useAppState';
@@ -34,7 +25,6 @@ import { ReceiptsSection } from '@/pages/ReceiptsSection';
 import { TeamSection } from '@/pages/TeamSection';
 import { MessageBoardSection } from '@/pages/MessageBoardSection';
 import { SettingsSection } from '@/pages/SettingsSection';
-import { ProfileSection } from '@/pages/ProfileSection';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -245,7 +235,7 @@ const AuthPage = ({ onAuthenticated }: { onAuthenticated: (user: AuthUser) => vo
   );
 };
 
-const CrmApp = ({ user, onLogout }: { user: AuthUser; onLogout: () => void }) => {
+const CrmApp = ({ user }: { user: AuthUser }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [clientSearch, setClientSearch] = useState('');
 
@@ -385,13 +375,6 @@ const CrmApp = ({ user, onLogout }: { user: AuthUser; onLogout: () => void }) =>
           />
         );
 
-      case 'profile':
-        return (
-          <ProfileSection
-            addToast={addToast}
-          />
-        );
-
       case 'settings':
         return (
           <SettingsSection
@@ -433,7 +416,9 @@ const CrmApp = ({ user, onLogout }: { user: AuthUser; onLogout: () => void }) =>
       <main className="flex-1 flex flex-col min-h-screen overflow-hidden">
         <Topbar
           onMenuClick={() => setSidebarOpen(true)}
-          onLogout={onLogout}
+          user={user}
+          onGoProfile={() => setView('settings')}
+          onPickSearchResult={() => undefined}
         />
 
         <div className="flex-1 overflow-y-auto scrollbar-thin p-3 sm:p-4 lg:p-6">
@@ -472,7 +457,7 @@ function App() {
     return <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center text-[var(--text-muted)]">Checking session...</div>;
   }
 
-  return user ? <CrmApp user={user} onLogout={handleLogout} /> : <AuthPage onAuthenticated={setUser} />;
+  return user ? <CrmApp user={user} /> : <AuthPage onAuthenticated={setUser} />;
 }
 
 export default App;
