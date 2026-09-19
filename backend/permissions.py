@@ -73,9 +73,26 @@ OPEN_ACTIONS = {
 }
 
 ROLE_PERMISSIONS = {
-    # NOTE: the manager role is retired for small-team use (no permissions;
-    # assign admin instead). The key is kept so old rows fail closed.
-    ROLE_MANAGER: set(),
+    # Manager: same as Admin for day-to-day work, but per section 5 cannot
+    # void invoices, manage team members, touch settings, manage users/roles,
+    # export/import, or back up — those stay Admin/Owner-only.
+    ROLE_MANAGER: {
+        ACTION_REVENUE,
+        ACTION_CLIENTS_VIEW,
+        ACTION_CLIENTS_ADD,
+        ACTION_CLIENTS_EDIT,
+        ACTION_CLIENTS_DELETE,
+        ACTION_LEADS_VIEW,
+        ACTION_LEADS_ADD,
+        ACTION_LEADS_EDIT,
+        ACTION_LEADS_MOVE,
+        ACTION_LEADS_DELETE,
+        ACTION_ASSIGN,
+        ACTION_INVOICES_VIEW,
+        ACTION_INVOICES_CREATE,
+        ACTION_INVOICES_SEND,
+        ACTION_PIN_MESSAGES,
+    },
     ROLE_STAFF: {
         ACTION_CLIENTS_VIEW,
         ACTION_CLIENTS_ADD,
@@ -93,6 +110,7 @@ ROLE_PERMISSIONS = {
         ACTION_INVOICES_VIEW,
         ACTION_INVOICES_CREATE,
         ACTION_INVOICES_SEND,
+        ACTION_EXPORT_CSV,
     },
 }
 
