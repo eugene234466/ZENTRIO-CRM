@@ -19,6 +19,7 @@ from routes.audit_log import audit_bp
 from search import search_bp
 from notifications import notifications_bp
 from routes.all_settings import settings_bp
+from routes.messages import messages_bp
 
 
 migrate = Migrate()
@@ -54,6 +55,7 @@ def create_app(config_name="development"):
     app.register_blueprint(search_bp, url_prefix="/api")
     app.register_blueprint(notifications_bp, url_prefix="/api")
     app.register_blueprint(settings_bp)
+    app.register_blueprint(messages_bp)
 
 
     @app.route("/", defaults={"path": ""})
