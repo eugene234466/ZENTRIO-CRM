@@ -172,9 +172,9 @@ class BusinessProfile(db.Model):
     currency = db.Column(db.String(10),default='USD')
     timezone = db.Column(db.String(100),default='UTC')
     logo_url = db.Column(db.String(512),nullable=True)
-    created_at = db.Column(db.DateTime,default=datetime.datetime.utcnow)
+    created_at = db.Column(db.DateTime,default=datetime.utcnow)
 
-    updated_at = db.Column(db.DateTime,default=datetime.datetime.utcnow,onupdate=datetime.datetime.utcnow)
+    updated_at = db.Column(db.DateTime,default=datetime.utcnow,onupdate=datetime.utcnow)
 
     def to_dict(self):
         return {
@@ -199,8 +199,8 @@ class InvoiceSettings(db.Model):
     next_number = db.Column(db.Integer,default=1001)
     tax_rate = db.Column(db.Float,default=0.0)
     tax_enabled = db.Column(db.Boolean,default=True)
-    created_at = db.Column(db.DateTime,default=datetime.datetime.utcnow)
-    updated_at = db.Column(db.DateTime,default=datetime.datetime.utcnow,onupdate=datetime.datetime.utcnow)
+    created_at = db.Column(db.DateTime,default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime,default=datetime.utcnow,onupdate=datetime.utcnow)
 
     def to_dict(self):
         return {
@@ -221,7 +221,7 @@ class PaymentMethod(db.Model):
     method_type = db.Column(db.String(50),nullable=False)
     details = db.Column(db.Text,nullable=True)
     is_active = db.Column(db.Boolean,default=True)
-    created_at = db.Column(db.DateTime,default=datetime.datetime.utcnow)
+    created_at = db.Column(db.DateTime,default=datetime.utcnow)
     def to_dict(self):
         return {
             'id': self.id,
@@ -241,7 +241,7 @@ class TeamMember(db.Model):
     role = db.Column(db.String(100),nullable=False)
     avatar = db.Column(db.String(512),nullable=True)
     status = db.Column(db.String(50),default='Active')
-    created_at = db.Column(db.DateTime,default=datetime.datetime.utcnow)
+    created_at = db.Column(db.DateTime,default=datetime.utcnow)
     tasks = db.relationship('TeamTask',backref='member',cascade='all, delete-orphan',lazy=True)
 
     def to_dict(self):
@@ -267,7 +267,7 @@ class TeamTask(db.Model):
     title = db.Column(db.String(255),nullable=False)
     status = db.Column( db.String(50),default='Pending')
     due_date = db.Column(db.String(50),nullable=True)
-    created_at = db.Column(db.DateTime,default=datetime.datetime.utcnow)
+    created_at = db.Column(db.DateTime,default=datetime.utcnow)
 
     def to_dict(self):
         return {
@@ -287,8 +287,8 @@ class ListSettings(db.Model):
     client_types = db.Column(db.Text, nullable=True)
     lead_stages = db.Column(db.Text, nullable=True)
     lead_temperatures = db.Column(db.Text, nullable=True)
-    created_at = db.Column(db.DateTime,default=datetime.datetime.utcnow)
-    updated_at = db.Column(db.DateTime,default=datetime.datetime.utcnow,onupdate=datetime.datetime.utcnow)
+    created_at = db.Column(db.DateTime,default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime,default=datetime.utcnow,onupdate=datetime.utcnow)
 
     def to_dict(self):
         import json
@@ -320,8 +320,8 @@ class AccountSettings(db.Model):
     timezone = db.Column(db.String(100),default='UTC')
     language = db.Column(db.String(20),default='en')
     date_format = db.Column(db.String(50),default='DD/MM/YYYY')
-    created_at = db.Column(db.DateTime,default=datetime.datetime.utcnow)
-    updated_at = db.Column(db.DateTime,default=datetime.datetime.utcnow,onupdate=datetime.datetime.utcnow)
+    created_at = db.Column(db.DateTime,default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime,default=datetime.utcnow,onupdate=datetime.utcnow)
 
     def to_dict(self):
         return {
