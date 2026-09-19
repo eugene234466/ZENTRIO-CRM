@@ -4,7 +4,7 @@ import json
 from flask import Blueprint, request, jsonify, current_app
 from werkzeug.utils import secure_filename
 
-from app.models import (
+from models import (
     db,
     BusinessProfile,
     InvoiceSettings,
