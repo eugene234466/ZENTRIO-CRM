@@ -1,0 +1,15 @@
+"""
+extensions.py
+Single shared instances of db, bcrypt, login_manager, and CORS,
+used across auth, contacts, and leads/pipeline/dashboard.
+"""
+
+from flask_sqlalchemy import SQLAlchemy
+from flask_bcrypt import Bcrypt
+from flask_login import LoginManager
+from flask_cors import CORS
+
+db = SQLAlchemy()
+bcrypt = Bcrypt()
+login_manager = LoginManager()
+cors = CORS()
