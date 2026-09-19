@@ -1,17 +1,25 @@
-import { ChevronLeft, Download, Share2 } from 'lucide-react';
+import { ChevronLeft, FileDown, FileSpreadsheet } from 'lucide-react';
 import type { Receipt, Invoice } from '@/types';
 import { formatCurrency, formatDateFull } from '@/lib/format';
+import {
+  exportInvoiceItemsCSV,
+  exportInvoicePDF,
+  exportReceiptCSV,
+  exportReceiptPDF,
+} from '@/lib/export';
 
-export const ReceiptView = ({ 
-  receipt, 
-  invoice, 
+export const ReceiptView = ({
+  receipt,
+  invoice,
   onClose,
-  type 
-}: { 
-  receipt?: Receipt; 
+  type,
+  onExported,
+}: {
+  receipt?: Receipt;
   invoice?: Invoice;
   onClose: () => void;
   type: 'receipt' | 'invoice';
+  onExported?: (message: string, kind: 'success' | 'error') => void;
 }) => {
   const data = type === 'receipt' ? receipt : invoice;
   if (!data) return null;
@@ -19,60 +27,24 @@ export const ReceiptView = ({
   const isInvoice = type === 'invoice';
   const inv = invoice;
 
-  const handlePrint = () => {
-    window.print();
+  const notify = (message: string, kind: 'success' | 'error') => onExported?.(message, kind);
+
+  const handleExportPDF = () => {
+    const ok = isInvoice && inv ? exportInvoicePDF(inv) : receipt ? exportReceiptPDF(receipt) : false;
+    notify(
+      ok ? 'Opening print view — choose "Save as PDF".' : 'Popup blocked. Please allow popups to export PDF.',
+      ok ? 'success' : 'error',
+    );
   };
 
-  const handleDownload = () => {
-    const content = document.getElementById('receipt-print-area')?.innerHTML || '';
-    const html = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>${type === 'receipt' ? 'Receipt' : 'Invoice'} - Zentrio</title>
-          <style>
-            body { font-family: Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; color: #333; }
-            .header { text-align: center; margin-bottom: 40px; border-bottom: 2px solid #F2C94C; padding-bottom: 20px; }
-            .logo { font-size: 32px; font-weight: bold; color: #F2C94C; }
-            .tagline { color: #666; font-size: 12px; margin-top: 5px; }
-            .doc-type { font-size: 24px; font-weight: bold; margin-top: 10px; color: #1a1a2e; }
-            .doc-number { color: #666; margin-top: 5px; }
-            .section { margin: 25px 0; }
-            .section-title { font-weight: bold; color: #1a1a2e; margin-bottom: 10px; font-size: 14px; text-transform: uppercase; }
-            .row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
-            .row:last-child { border-bottom: none; }
-            .label { color: #666; }
-            .value { font-weight: 500; }
-            .items-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-            .items-table th { background: #f8f8f8; padding: 12px; text-align: left; font-size: 12px; text-transform: uppercase; color: #666; }
-            .items-table td { padding: 12px; border-bottom: 1px solid #eee; }
-            .items-table tr:last-child td { border-bottom: 2px solid #F2C94C; }
-            .totals { margin-top: 20px; border-top: 2px solid #F2C94C; padding-top: 20px; }
-            .total-row { display: flex; justify-content: space-between; padding: 8px 0; }
-            .grand-total { font-size: 20px; font-weight: bold; color: #F2C94C; }
-            .footer { text-align: center; margin-top: 50px; padding-top: 20px; border-top: 1px solid #eee; color: #666; font-size: 12px; }
-            .status-badge { display: inline-block; padding: 5px 15px; border-radius: 20px; font-size: 12px; font-weight: bold; text-transform: uppercase; }
-            .status-paid { background: #d4edda; color: #155724; }
-            .status-sent { background: #fff3cd; color: #856404; }
-            .status-draft { background: #e2e3e5; color: #383d41; }
-            .status-overdue { background: #f8d7da; color: #721c24; }
-            @media print { body { padding: 20px; } }
-          </style>
-        </head>
-        <body>
-          ${content}
-        </body>
-      </html>
-    `;
-    const blob = new Blob([html], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${type === 'receipt' ? 'Receipt' : 'Invoice'}-${(receipt?.receiptNumber || invoice?.invoiceNumber || 'document')}.html`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+  const handleExportCSV = () => {
+    if (isInvoice && inv) {
+      exportInvoiceItemsCSV(inv);
+      notify(`Downloaded ${inv.invoiceNumber}-items.csv.`, 'success');
+    } else if (receipt) {
+      exportReceiptCSV(receipt);
+      notify(`Downloaded ${receipt.receiptNumber}.csv.`, 'success');
+    }
   };
 
   return (
@@ -89,19 +61,19 @@ export const ReceiptView = ({
             </h2>
           </div>
           <div className="flex items-center gap-2">
-            <button 
-              onClick={handleDownload}
+            <button
+              onClick={handleExportCSV}
               className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-[rgba(244,246,251,0.04)] text-gray-600 dark:text-[#A6A9B6]"
-              title="Download"
+              title="Export CSV"
             >
-              <Download className="w-5 h-5" />
+              <FileSpreadsheet className="w-5 h-5" />
             </button>
-            <button 
-              onClick={handlePrint}
+            <button
+              onClick={handleExportPDF}
               className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-[rgba(244,246,251,0.04)] text-gray-600 dark:text-[#A6A9B6]"
-              title="Print"
+              title="Export PDF"
             >
-              <Share2 className="w-5 h-5" />
+              <FileDown className="w-5 h-5" />
             </button>
           </div>
         </div>

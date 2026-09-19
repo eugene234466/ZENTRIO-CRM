@@ -5,20 +5,23 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useAppState } from '@/hooks/useAppState';
 import type { Message } from '@/types';
-import { generateId } from '@/lib/format';
+import type { AuthUser } from '@/lib/api';
+import { generateId, getInitials, formatRole } from '@/lib/format';
 
 export const MessageBoardSection = ({ 
   state, 
   addMessage, 
   pinMessage, 
   unpinMessage,
-  addToast 
+  addToast,
+  currentUser,
 }: { 
   state: ReturnType<typeof useAppState>['state']; 
   addMessage: (message: Message) => void;
   pinMessage: (id: string) => void;
   unpinMessage: (id: string) => void;
   addToast: (message: string, type: 'success' | 'error' | 'info') => void;
+  currentUser: AuthUser;
 }) => {
   const [newMessage, setNewMessage] = useState('');
 
@@ -27,8 +30,8 @@ export const MessageBoardSection = ({
     
     const message: Message = {
       id: generateId(),
-      author: 'Spirit',
-      authorRole: 'Operations',
+      author: currentUser.username,
+      authorRole: formatRole(currentUser.role),
       content: newMessage,
       timestamp: new Date().toISOString(),
       isPinned: false,
@@ -70,7 +73,7 @@ export const MessageBoardSection = ({
         <CardContent className="p-4 sm:p-6">
           <div className="flex gap-3 sm:gap-4">
             <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-[#F2C94C]/30 to-[#D4A93A]/30 flex items-center justify-center flex-shrink-0">
-              <span className="text-[#D4A93A] dark:text-[#F2C94C] font-bold text-xs sm:text-sm">S</span>
+              <span className="text-[#D4A93A] dark:text-[#F2C94C] font-bold text-xs sm:text-sm">{getInitials(currentUser.username)}</span>
             </div>
             <div className="flex-1 space-y-3">
               <Textarea
@@ -106,7 +109,7 @@ export const MessageBoardSection = ({
               <CardContent className="p-4 sm:p-6">
                 <div className="flex gap-3 sm:gap-4">
                   <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-[#F2C94C]/30 to-[#D4A93A]/30 flex items-center justify-center flex-shrink-0">
-                    <span className="text-[#D4A93A] dark:text-[#F2C94C] font-bold text-xs sm:text-sm">S</span>
+                    <span className="text-[#D4A93A] dark:text-[#F2C94C] font-bold text-xs sm:text-sm">{getInitials(message.author)}</span>
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-2 flex-wrap">
@@ -136,7 +139,7 @@ export const MessageBoardSection = ({
             <CardContent className="p-4 sm:p-6">
               <div className="flex gap-3 sm:gap-4">
                 <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-[#F2C94C]/30 to-[#D4A93A]/30 flex items-center justify-center flex-shrink-0">
-                  <span className="text-[#D4A93A] dark:text-[#F2C94C] font-bold text-xs sm:text-sm">S</span>
+                  <span className="text-[#D4A93A] dark:text-[#F2C94C] font-bold text-xs sm:text-sm">{getInitials(message.author)}</span>
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-2 flex-wrap">

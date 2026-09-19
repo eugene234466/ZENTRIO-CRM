@@ -37,6 +37,7 @@ import type {
 
 import { generateId } from '@/lib/format';
 import { TaskStatusBadge } from '@/components/statusBadge';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 
 export const TeamSection = ({
   state,
@@ -47,6 +48,7 @@ export const TeamSection = ({
   updateTask,
   deleteTask,
   addToast,
+  isAdmin,
 }: {
   state: ReturnType<typeof useAppState>['state'];
   addTeamMember: (member: TeamMember) => void;
@@ -59,6 +61,7 @@ export const TeamSection = ({
     message: string,
     type: 'success' | 'error' | 'info'
   ) => void;
+  isAdmin: boolean;
 }) => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
@@ -102,6 +105,8 @@ export const TeamSection = ({
   ) => {
     e.preventDefault();
 
+    if (!isAdmin) return;
+
     const formData = new FormData(e.currentTarget);
 
     const newMember: TeamMember = {
@@ -124,7 +129,7 @@ export const TeamSection = ({
   ) => {
     e.preventDefault();
 
-    if (!editingMember) return;
+    if (!editingMember || !isAdmin) return;
 
     const formData = new FormData(e.currentTarget);
 
@@ -189,15 +194,15 @@ export const TeamSection = ({
   };
 
   const handleDeleteMember = () => {
-    if (!deleteMemberTarget) return;
+    if (!deleteMemberTarget || !isAdmin) return;
 
     deleteTeamMember(deleteMemberTarget.id);
-
-    setDeleteMemberTarget(null);
 
     if (viewingMember?.id === deleteMemberTarget.id) {
       setViewingMember(null);
     }
+
+    setDeleteMemberTarget(null);
 
     addToast('Team member removed', 'success');
   };
@@ -222,7 +227,7 @@ export const TeamSection = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h2 className="text-xl sm:text-2xl font-bold text-[var(--text-main)]">
-            Team & Tasks
+            Team &amp; Tasks
           </h2>
 
           <p className="text-sm text-[var(--text-muted)] mt-1">
@@ -230,13 +235,15 @@ export const TeamSection = ({
           </p>
         </div>
 
-        <Button
-          onClick={() => setIsAddDialogOpen(true)}
-          className="bg-[#F2C94C] text-white hover:bg-[#D4A93A] font-medium w-full sm:w-auto"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Add Member
-        </Button>
+        {isAdmin && (
+          <Button
+            onClick={() => setIsAddDialogOpen(true)}
+            className="bg-[#F2C94C] text-white hover:bg-[#D4A93A] font-medium w-full sm:w-auto"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Member
+          </Button>
+        )}
       </div>
 
       {/* Team Grid */}
@@ -279,25 +286,27 @@ export const TeamSection = ({
                 </div>
 
                 {/* Member Actions */}
-                <div className="flex items-center gap-1">
+                {isAdmin && (
+                  <div className="flex items-center gap-1">
 
-                  <button
-                    onClick={() => setEditingMember(member)}
-                    className="p-1.5 rounded-lg hover:bg-[var(--input-bg)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors"
-                    title="Edit member"
-                  >
-                    <Pencil className="w-4 h-4" />
-                  </button>
+                    <button
+                      onClick={() => setEditingMember(member)}
+                      className="p-1.5 rounded-lg hover:bg-[var(--input-bg)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors"
+                      title="Edit member"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
 
-                  <button
-                    onClick={() => setDeleteMemberTarget(member)}
-                    className="p-1.5 rounded-lg hover:bg-[#E57A7A]/10 text-[var(--text-muted)] hover:text-[#E57A7A] transition-colors"
-                    title="Remove member"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                    <button
+                      onClick={() => setDeleteMemberTarget(member)}
+                      className="p-1.5 rounded-lg hover:bg-[#E57A7A]/10 text-[var(--text-muted)] hover:text-[#E57A7A] transition-colors"
+                      title="Remove member"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
 
-                </div>
+                  </div>
+                )}
               </div>
 
               {/* Status */}
@@ -406,7 +415,9 @@ export const TeamSection = ({
           </p>
 
           <p className="text-sm text-[var(--text-muted)] mt-1">
-            Add your first team member to get started.
+            {isAdmin
+              ? 'Add your first team member to get started.'
+              : 'An admin can add team members here.'}
           </p>
         </div>
       )}
@@ -905,94 +916,36 @@ export const TeamSection = ({
       </Dialog>
 
       {/* Delete Member Confirmation */}
-      <Dialog
-        open={!!deleteMemberTarget}
+      <ConfirmDialog
+        open={deleteMemberTarget !== null}
         onOpenChange={(open) => {
           if (!open) setDeleteMemberTarget(null);
         }}
-      >
-        <DialogContent className="bg-[var(--card-bg)] border-[var(--border-color)] text-[var(--text-main)] max-w-sm">
-
-          <DialogHeader>
-            <DialogTitle>
-              Remove Team Member?
-            </DialogTitle>
-          </DialogHeader>
-
-          <p className="text-sm text-[var(--text-muted)]">
-            Are you sure you want to remove{' '}
-            <span className="font-medium text-[var(--text-main)]">
-              {deleteMemberTarget?.name}
-            </span>
-            ? Their assigned tasks will also be removed.
-          </p>
-
-          <div className="flex gap-3 mt-4">
-
-            <Button
-              variant="outline"
-              className="flex-1 border-[var(--border-color)]"
-              onClick={() => setDeleteMemberTarget(null)}
-            >
-              Cancel
-            </Button>
-
-            <Button
-              onClick={handleDeleteMember}
-              className="flex-1 bg-[#7DD3A6] text-white hover:bg-[#68BD91]"
-            >
-              Remove
-            </Button>
-
-          </div>
-
-        </DialogContent>
-      </Dialog>
+        title="Remove this team member?"
+        description={
+          deleteMemberTarget
+            ? `${deleteMemberTarget.name} will be removed from the team list along with their tasks.`
+            : 'They will be removed from the team list along with their tasks.'
+        }
+        confirmLabel="Remove member"
+        onConfirm={handleDeleteMember}
+      />
 
       {/* Delete Task Confirmation */}
-      <Dialog
-        open={!!deleteTaskTarget}
+      <ConfirmDialog
+        open={deleteTaskTarget !== null}
         onOpenChange={(open) => {
           if (!open) setDeleteTaskTarget(null);
         }}
-      >
-        <DialogContent className="bg-[var(--card-bg)] border-[var(--border-color)] text-[var(--text-main)] max-w-sm">
-
-          <DialogHeader>
-            <DialogTitle>
-              Remove Task?
-            </DialogTitle>
-          </DialogHeader>
-
-          <p className="text-sm text-[var(--text-muted)]">
-            Are you sure you want to remove{' '}
-            <span className="font-medium text-[var(--text-main)]">
-              {deleteTaskTarget?.task.title}
-            </span>
-            ?
-          </p>
-
-          <div className="flex gap-3 mt-4">
-
-            <Button
-              variant="outline"
-              className="flex-1 border-[var(--border-color)]"
-              onClick={() => setDeleteTaskTarget(null)}
-            >
-              Cancel
-            </Button>
-
-            <Button
-              onClick={handleDeleteTask}
-              className="flex-1 bg-[#7DD3A6] text-white hover:bg-[#68BD91]"
-            >
-              Remove
-            </Button>
-
-          </div>
-
-        </DialogContent>
-      </Dialog>
+        title="Remove this task?"
+        description={
+          deleteTaskTarget
+            ? `"${deleteTaskTarget.task.title}" will be removed from this member's task list.`
+            : 'This task will be removed.'
+        }
+        confirmLabel="Remove task"
+        onConfirm={handleDeleteTask}
+      />
 
     </div>
   );

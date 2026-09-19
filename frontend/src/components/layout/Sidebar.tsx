@@ -1,4 +1,3 @@
-
 import {
   LayoutDashboard,
   Users,
@@ -8,20 +7,27 @@ import {
   UsersRound,
   MessageSquare,
   Settings,
+  LogOut,
 } from 'lucide-react';
 import type { View } from '@/types';
+import type { AuthUser } from '@/lib/api';
+import { getInitials, formatRole } from '@/lib/format';
+import { useAuth } from '@/hooks/useAuth';
 
 export const Sidebar = ({
   currentView,
   setView,
   isOpen,
   setIsOpen,
+  user,
 }: {
   currentView: View;
   setView: (view: View) => void;
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
+  user: AuthUser;
 }) => {
+  const { logout } = useAuth();
   const navItems: { view: View; label: string; icon: React.ElementType }[] = [
     { view: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { view: 'clients', label: 'Clients', icon: Users },
@@ -96,17 +102,29 @@ export const Sidebar = ({
         {/* Footer */}
         <div className="p-4 border-t border-[var(--border-color)]">
           <div className="flex items-center gap-3 px-3 py-2">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#F2C94C]/30 to-[#D4A93A]/30 flex items-center justify-center">
-              <span className="text-[#D4A93A] dark:text-[#F2C94C] text-xs font-bold">
-                KM
-              </span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-[var(--text-main)] truncate">
-                Kwesi Mensah
-              </p>
-              <p className="text-xs text-[var(--text-muted)]">Admin</p>
-            </div>
+            <button
+              onClick={() => {
+                setView('settings');
+                setIsOpen(false);
+              }}
+              title="Go to profile"
+              className="flex items-center gap-3 flex-1 min-w-0 rounded-xl hover:bg-[var(--hover-bg)] p-1 -m-1 transition-colors text-left"
+            >
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#F2C94C]/30 to-[#D4A93A]/30 flex items-center justify-center flex-shrink-0">
+                <span className="text-[#D4A93A] dark:text-[#F2C94C] text-xs font-bold">{getInitials(user.username)}</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-[var(--text-main)] truncate">{user.username}</p>
+                <p className="text-xs text-[var(--text-muted)]">{formatRole(user.role)}</p>
+              </div>
+            </button>
+            <button
+              onClick={() => void logout()}
+              title="Log out"
+              className="p-2 rounded-lg hover:bg-[var(--hover-bg)] text-[var(--text-muted)] hover:text-red-500 transition-colors"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </aside>

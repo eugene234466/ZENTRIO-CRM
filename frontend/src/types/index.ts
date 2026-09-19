@@ -13,6 +13,7 @@ export type ClientStatus =
 export interface Client {
   id: string;
   name: string;
+  company?: string;
   email: string;
   phone: string;
   type: ClientType;
@@ -35,6 +36,8 @@ export type LeadTemperature =
   | 'Warm'
   | 'Cold';
 
+export type LeadSource = 'Referral' | 'Social' | 'Direct' | 'Other';
+
 export interface Lead {
   id: string;
   name: string;
@@ -43,6 +46,9 @@ export interface Lead {
   value: number;
   stage: LeadStage;
   temperature: LeadTemperature;
+  source: LeadSource;
+  expectedCloseDate?: string;
+  notes?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -215,6 +221,7 @@ export type View =
   | 'board'
   | 'settings';
 
+
 export interface AppState {
   currentView: View;
   clients: Client[];
@@ -228,129 +235,26 @@ export interface AppState {
 
 // Action Types
 export type Action =
-  | {
-      type: 'SET_VIEW';
-      payload: View;
-    }
-
-  | {
-      type: 'ADD_CLIENT';
-      payload: Client;
-    }
-
-  | {
-      type: 'UPDATE_CLIENT';
-      payload: Client;
-    }
-
-  | {
-      type: 'DELETE_CLIENT';
-      payload: string;
-    }
-
-  | {
-      type: 'ADD_LEAD';
-      payload: Lead;
-    }
-
-  | {
-      type: 'UPDATE_LEAD';
-      payload: Lead;
-    }
-
-  | {
-      type: 'DELETE_LEAD';
-      payload: string;
-    }
-
-  | {
-      type: 'MOVE_LEAD';
-      payload: {
-        id: string;
-        stage: LeadStage;
-      };
-    }
-
-  | {
-      type: 'ADD_INVOICE';
-      payload: Invoice;
-    }
-
-  | {
-      type: 'UPDATE_INVOICE';
-      payload: Invoice;
-    }
-
-  | {
-      type: 'DELETE_INVOICE';
-      payload: string;
-    }
-
-  | {
-      type: 'HYDRATE';
-      payload: AppState;
-    }
-
-  | {
-      type: 'ADD_RECEIPT';
-      payload: Receipt;
-    }
-
-  | {
-      type: 'ADD_TEAM_MEMBER';
-      payload: TeamMember;
-    }
-
-  | {
-      type: 'UPDATE_TEAM_MEMBER';
-      payload: TeamMember;
-    }
-
-  | {
-      type: 'DELETE_TEAM_MEMBER';
-      payload: string;
-    }
-
-  | {
-      type: 'ADD_TASK';
-      payload: {
-        memberId: string;
-        task: Task;
-      };
-    }
-
-  | {
-      type: 'UPDATE_TASK';
-      payload: {
-        memberId: string;
-        task: Task;
-      };
-    }
-
-  | {
-      type: 'DELETE_TASK';
-      payload: {
-        memberId: string;
-        taskId: string;
-      };
-    }
-
-  | {
-      type: 'ADD_MESSAGE';
-      payload: Message;
-    }
-
-  | {
-      type: 'PIN_MESSAGE';
-      payload: string;
-    }
-
-  | {
-      type: 'UNPIN_MESSAGE';
-      payload: string;
-    }
-
-  | {
-      type: 'UPDATE_SETTINGS';
-      payload: Partial<Settings>;
-    };
+  | { type: 'SET_VIEW'; payload: View }
+  | { type: 'ADD_CLIENT'; payload: Client }
+  | { type: 'UPDATE_CLIENT'; payload: Client }
+  | { type: 'DELETE_CLIENT'; payload: string }
+  | { type: 'ADD_LEAD'; payload: Lead }
+  | { type: 'UPDATE_LEAD'; payload: Lead }
+  | { type: 'DELETE_LEAD'; payload: string }
+  | { type: 'MOVE_LEAD'; payload: { id: string; stage: LeadStage } }
+  | { type: 'ADD_INVOICE'; payload: Invoice }
+  | { type: 'UPDATE_INVOICE'; payload: Invoice }
+  | { type: 'DELETE_INVOICE'; payload: string }
+  | { type: 'HYDRATE'; payload: AppState }
+  | { type: 'ADD_RECEIPT'; payload: Receipt }
+  | { type: 'ADD_TEAM_MEMBER'; payload: TeamMember }
+  | { type: 'UPDATE_TEAM_MEMBER'; payload: TeamMember }
+  | { type: 'DELETE_TEAM_MEMBER'; payload: string }
+  | { type: 'ADD_TASK'; payload: { memberId: string; task: Task } }
+  | { type: 'UPDATE_TASK'; payload: { memberId: string; task: Task } }
+  | { type: 'DELETE_TASK'; payload: { memberId: string; taskId: string } }
+  | { type: 'ADD_MESSAGE'; payload: Message }
+  | { type: 'PIN_MESSAGE'; payload: string }
+  | { type: 'UNPIN_MESSAGE'; payload: string }
+  | { type: 'UPDATE_SETTINGS'; payload: Partial<Settings> };

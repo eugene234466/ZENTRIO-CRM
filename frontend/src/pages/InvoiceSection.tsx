@@ -1,6 +1,6 @@
 // Invoices Section
 import { useState } from 'react';
-import { Plus, Trash2, FileText, Calendar, Clock, Eye, CheckCircle } from 'lucide-react';
+import { Plus, Trash2, FileText, Calendar, Clock, Eye, CheckCircle, FileDown, FileSpreadsheet } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useAppState } from '@/hooks/useAppState';
 import type { Invoice } from '@/types';
 import { formatCurrency, formatDate, generateId } from '@/lib/format';
+import { exportInvoicesCSV, exportInvoicesPDF } from '@/lib/export';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { InvoiceStatusBadge } from '@/components/statusBadge';
 import { ReceiptView } from '@/components/layout/ReceiptView';
 
@@ -18,16 +20,19 @@ export const InvoicesSection = ({
   addInvoice, 
   updateInvoice, 
   deleteInvoice,
-  addToast 
+  addToast,
+  isAdmin,
 }: { 
   state: ReturnType<typeof useAppState>['state']; 
   addInvoice: (invoice: Invoice) => void;
   updateInvoice: (invoice: Invoice) => void;
   deleteInvoice: (id: string) => void;
   addToast: (message: string, type: 'success' | 'error' | 'info') => void;
+  isAdmin: boolean;
 }) => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [viewingInvoice, setViewingInvoice] = useState<Invoice | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [items, setItems] = useState<{ description: string; quantity: number; unitPrice: number }[]>([
     { description: '', quantity: 1, unitPrice: 0 }
   ]);
@@ -88,6 +93,33 @@ export const InvoicesSection = ({
     addToast('Invoice created successfully', 'success');
   };
 
+  const handleExportCSV = () => {
+    if (state.invoices.length === 0) {
+      addToast('Nothing to export yet.', 'info');
+      return;
+    }
+    exportInvoicesCSV(state.invoices);
+    addToast(`Exported ${state.invoices.length} invoice(s) to CSV.`, 'success');
+  };
+
+  const handleExportPDF = () => {
+    if (state.invoices.length === 0) {
+      addToast('Nothing to export yet.', 'info');
+      return;
+    }
+    const ok = exportInvoicesPDF(state.invoices);
+    addToast(
+      ok ? 'Opening print view — choose "Save as PDF".' : 'Popup blocked. Please allow popups to export PDF.',
+      ok ? 'success' : 'error',
+    );
+  };
+
+  const confirmDeleteInvoice = () => {
+    if (!pendingDeleteId) return;
+    deleteInvoice(pendingDeleteId);
+    setPendingDeleteId(null);
+    addToast('Invoice deleted', 'success');
+  };
   const handleMarkAsPaid = (invoice: Invoice) => {
     updateInvoice({ ...invoice, status: 'Paid', paidDate: new Date().toISOString().split('T')[0] });
     addToast('Invoice marked as paid', 'success');
@@ -99,7 +131,30 @@ export const InvoicesSection = ({
     <div className="space-y-4 sm:space-y-6 pb-20 lg:pb-0">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <h2 className="text-xl sm:text-2xl font-bold text-[var(--text-main)]">Invoices</h2>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          {isAdmin && (
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={handleExportCSV}
+              className="flex-1 sm:flex-none border-[var(--border-color)] text-[var(--text-main)]"
+              title="Export all invoices to CSV"
+            >
+              <FileSpreadsheet className="w-4 h-4 mr-2" />
+              CSV
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleExportPDF}
+              className="flex-1 sm:flex-none border-[var(--border-color)] text-[var(--text-main)]"
+              title="Export all invoices to PDF"
+            >
+              <FileDown className="w-4 h-4 mr-2" />
+              PDF
+            </Button>
+          </div>
+          )}
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
             <Button className="bg-[#F2C94C] text-white hover:bg-[#D4A93A] font-medium w-full sm:w-auto">
               <Plus className="w-4 h-4 mr-2" />
@@ -206,6 +261,7 @@ export const InvoicesSection = ({
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       {/* Invoices List */}
@@ -267,10 +323,7 @@ export const InvoicesSection = ({
                       </Button>
                     )}
                     <button 
-                      onClick={() => {
-                        deleteInvoice(invoice.id);
-                        addToast('Invoice deleted', 'success');
-                      }}
+                      onClick={() => setPendingDeleteId(invoice.id)}
                       className="p-2 rounded-lg hover:bg-[#E57A7A]/10 text-[var(--text-muted)] hover:text-[#E57A7A] transition-colors"
                     >
                       <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -291,12 +344,22 @@ export const InvoicesSection = ({
 
       {/* View Invoice Modal */}
       {viewingInvoice && (
-        <ReceiptView 
+        <ReceiptView
           invoice={viewingInvoice}
           type="invoice"
           onClose={() => setViewingInvoice(null)}
+          onExported={(message, kind) => addToast(message, kind === 'error' ? 'error' : 'success')}
         />
       )}
+
+      <ConfirmDialog
+        open={pendingDeleteId !== null}
+        onOpenChange={(open) => !open && setPendingDeleteId(null)}
+        title="Delete this invoice?"
+        description="The invoice will be removed from your workspace. This cannot be undone from here."
+        confirmLabel="Delete invoice"
+        onConfirm={confirmDeleteInvoice}
+      />
     </div>
   );
 };
