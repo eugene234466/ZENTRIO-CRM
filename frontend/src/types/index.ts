@@ -1,6 +1,14 @@
 // Client Types
-export type ClientType = 'SME' | 'School' | 'Healthcare' | 'Enterprise';
-export type ClientStatus = 'Active' | 'Lead' | 'Prospect';
+export type ClientType =
+  | 'SME'
+  | 'School'
+  | 'Healthcare'
+  | 'Enterprise';
+
+export type ClientStatus =
+  | 'Active'
+  | 'Lead'
+  | 'Prospect';
 
 export interface Client {
   id: string;
@@ -15,8 +23,18 @@ export interface Client {
 }
 
 // Lead Pipeline Types
-export type LeadStage = 'New' | 'Contacted' | 'Qualified' | 'Proposal Sent' | 'Won' | 'Lost';
-export type LeadTemperature = 'Hot' | 'Warm' | 'Cold';
+export type LeadStage =
+  | 'New'
+  | 'Contacted'
+  | 'Qualified'
+  | 'Proposal Sent'
+  | 'Won'
+  | 'Lost';
+
+export type LeadTemperature =
+  | 'Hot'
+  | 'Warm'
+  | 'Cold';
 
 export type LeadSource = 'Referral' | 'Social' | 'Direct' | 'Other';
 
@@ -36,7 +54,11 @@ export interface Lead {
 }
 
 // Invoice Types
-export type InvoiceStatus = 'Draft' | 'Sent' | 'Paid' | 'Overdue';
+export type InvoiceStatus =
+  | 'Draft'
+  | 'Sent'
+  | 'Paid'
+  | 'Overdue';
 
 export interface InvoiceItem {
   id: string;
@@ -74,8 +96,16 @@ export interface Receipt {
 }
 
 // Team Types
-export type TeamMemberRole = 'Designer' | 'Developer' | 'Intern' | 'Manager';
-export type TaskStatus = 'Pending' | 'In Progress' | 'Completed';
+export type TeamMemberRole =
+  | 'Designer'
+  | 'Developer'
+  | 'Intern'
+  | 'Manager';
+
+export type TaskStatus =
+  | 'Pending'
+  | 'In Progress'
+  | 'Completed';
 
 export interface Task {
   id: string;
@@ -91,7 +121,10 @@ export interface TeamMember {
   email: string;
   avatar?: string;
   tasks: Task[];
-  status: 'Active' | 'Away' | 'Offline';
+  status:
+    | 'Active'
+    | 'Away'
+    | 'Offline';
 }
 
 // Message Board Types
@@ -104,8 +137,90 @@ export interface Message {
   isPinned: boolean;
 }
 
+// Settings Types
+export interface BusinessSettings {
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  website: string;
+  tin: string;
+  logo?: string;
+}
+
+export interface InvoiceSettings {
+  currency: string;
+  taxRate: number;
+  taxLabel: string;
+  paymentTerms: number;
+  paymentMethods: string[];
+  invoicePrefix: string;
+  nextInvoiceNumber: number;
+  receiptPrefix: string;
+  nextReceiptNumber: number;
+  footer: string;
+}
+
+export interface ListSettings {
+  clientTypes: ClientType[];
+  leadStages: LeadStage[];
+  leadTemperatures: LeadTemperature[];
+}
+
+export type CRMRole =
+  | 'Owner'
+  | 'Admin'
+  | 'Manager'
+  | 'Staff'
+  | 'Accountant';
+
+export type CRMUserStatus =
+  | 'Active'
+  | 'Invited'
+  | 'Inactive';
+
+export interface CRMUser {
+  id: string;
+  name: string;
+  email: string;
+  role: CRMRole;
+  status: CRMUserStatus;
+}
+
+export interface UserSettings {
+  currentUserId: string;
+  users: CRMUser[];
+}
+
+export interface AccountSettings {
+  name: string;
+  email: string;
+}
+
+export interface DataSettings {
+  lastBackupAt?: string;
+}
+
+export interface Settings {
+  business: BusinessSettings;
+  invoices: InvoiceSettings;
+  lists: ListSettings;
+  users: UserSettings;
+  account: AccountSettings;
+  data: DataSettings;
+}
+
 // App State
-export type View = 'dashboard' | 'clients' | 'leads' | 'invoices' | 'receipts' | 'team' | 'board' | 'profile';
+export type View =
+  | 'dashboard'
+  | 'clients'
+  | 'leads'
+  | 'invoices'
+  | 'receipts'
+  | 'team'
+  | 'board'
+  | 'settings';
+
 
 export interface AppState {
   currentView: View;
@@ -115,9 +230,10 @@ export interface AppState {
   receipts: Receipt[];
   team: TeamMember[];
   messages: Message[];
+  settings: Settings;
 }
 
-// Action Types for Reducer
+// Action Types
 export type Action =
   | { type: 'SET_VIEW'; payload: View }
   | { type: 'ADD_CLIENT'; payload: Client }
@@ -137,6 +253,8 @@ export type Action =
   | { type: 'DELETE_TEAM_MEMBER'; payload: string }
   | { type: 'ADD_TASK'; payload: { memberId: string; task: Task } }
   | { type: 'UPDATE_TASK'; payload: { memberId: string; task: Task } }
+  | { type: 'DELETE_TASK'; payload: { memberId: string; taskId: string } }
   | { type: 'ADD_MESSAGE'; payload: Message }
   | { type: 'PIN_MESSAGE'; payload: string }
-  | { type: 'UNPIN_MESSAGE'; payload: string };
+  | { type: 'UNPIN_MESSAGE'; payload: string }
+  | { type: 'UPDATE_SETTINGS'; payload: Partial<Settings> };
