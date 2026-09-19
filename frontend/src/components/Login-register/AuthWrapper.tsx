@@ -19,7 +19,7 @@ const AuthWrapper = ({ onAuthenticated }: AuthWrapperProps) => {
   const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
-    // Invite links look like /login?invite=<token>
+   
     const params = new URLSearchParams(window.location.search);
     const token = params.get('invite');
     if (token) {
