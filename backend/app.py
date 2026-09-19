@@ -2,7 +2,6 @@ import os
 from pathlib import Path
 from flask import Flask, abort, jsonify, send_from_directory
 from dotenv import load_dotenv
-from sqlalchemy import inspect, text
 from flask_migrate import Migrate
 from flask_jwt_extended import JWTManager
 
@@ -56,15 +55,6 @@ def create_app(config_name="development"):
     app.register_blueprint(notifications_bp, url_prefix="/api")
     app.register_blueprint(settings_bp)
 
-    with app.app_context():
-        if inspect(db.engine).has_table("user"):
-            columns = {column["name"] for column in inspect(db.engine).get_columns("user")}
-            if "role" not in columns:
-                db.session.execute(
-                    text("ALTER TABLE `user` ADD COLUMN role VARCHAR(20) NOT NULL DEFAULT 'staff'")
-                )
-                db.session.commit()
-        db.create_all()
 
     @app.route("/", defaults={"path": ""})
     @app.route("/<path:path>")
