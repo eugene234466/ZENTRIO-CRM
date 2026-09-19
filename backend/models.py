@@ -105,13 +105,20 @@ class Message(db.Model):
     __tablename__ = "message"
 
     id = db.Column(db.Integer, primary_key=True)
-    content = db.Column(db.Text, default="")
-    author = db.Column(db.String(80), default="")
-    is_pinned = db.Column(db.Boolean, default=False)
+    content = db.Column(db.Text, nullable=False, default="")
+    author_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    author_user = db.relationship("User", foreign_keys=[author_id])
+    is_pinned = db.Column(db.Boolean, nullable=False, default=False)
     created_at = db.Column(
         db.DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
     )
+    updated_at = db.Column(
+        db.DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+    deleted_at = db.Column(db.DateTime(timezone=True))
 
 
 class Notification(db.Model):
