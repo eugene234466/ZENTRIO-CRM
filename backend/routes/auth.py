@@ -15,7 +15,7 @@ from permissions import (
     ROLE_OWNER,
 )
 
-USER_ROLES = {"owner", "admin", "staff", "accountant"}
+USER_ROLES = {"owner", "admin", "manager", "staff", "accountant"}
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
 

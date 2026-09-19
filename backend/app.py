@@ -2,7 +2,6 @@ import os
 from pathlib import Path
 from flask import Flask, abort, jsonify, send_from_directory
 from dotenv import load_dotenv
-from sqlalchemy import inspect, text
 from flask_migrate import Migrate
 from flask_jwt_extended import JWTManager
 
@@ -15,6 +14,7 @@ from routes.contacts import contacts_bp
 from routes.pipeline import pipeline_bp
 from routes.leads import leads_bp
 from routes.dashboard import dashboard_bp
+from routes.invoices import invoices_bp
 from routes.audit_log import audit_bp
 
 from search import search_bp
@@ -51,20 +51,12 @@ def create_app(config_name="development"):
     app.register_blueprint(pipeline_bp, url_prefix="/api")
     app.register_blueprint(leads_bp, url_prefix="/api")
     app.register_blueprint(dashboard_bp, url_prefix="/api")
+    app.register_blueprint(invoices_bp)
     app.register_blueprint(audit_bp, url_prefix="/api")
     app.register_blueprint(search_bp, url_prefix="/api")
     app.register_blueprint(notifications_bp, url_prefix="/api")
     app.register_blueprint(settings_bp)
 
-    with app.app_context():
-        if inspect(db.engine).has_table("user"):
-            columns = {column["name"] for column in inspect(db.engine).get_columns("user")}
-            if "role" not in columns:
-                db.session.execute(
-                    text("ALTER TABLE `user` ADD COLUMN role VARCHAR(20) NOT NULL DEFAULT 'staff'")
-                )
-                db.session.commit()
-        db.create_all()
 
     @app.route("/", defaults={"path": ""})
     @app.route("/<path:path>")
