@@ -1,6 +1,24 @@
 from datetime import datetime, timezone
-from flask_login import UserMixin
 from extensions import db, bcrypt
+
+
+class UserMixin:
+    """Minimal login-user interface used by the User model."""
+
+    @property
+    def is_authenticated(self):
+        return True
+
+    @property
+    def is_active(self):
+        return True
+
+    @property
+    def is_anonymous(self):
+        return False
+
+    def get_id(self):
+        return str(self.id)
 
 
 def live(model):
@@ -266,7 +284,7 @@ class NotificationPreference(db.Model):
 
 
 class AuditLog(db.Model):
-    __tablename__ = "auFind    datetime.datetime.utcnowit_log"
+    __tablename__ = "audit_log"
 
     id = db.Column(db.Integer, primary_key=True)
     actor_id = db.Column(db.Integer, db.ForeignKey("user.id"))
