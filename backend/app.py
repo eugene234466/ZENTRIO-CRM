@@ -3,6 +3,8 @@ from pathlib import Path
 from flask import Flask, abort, jsonify, send_from_directory
 from dotenv import load_dotenv
 from sqlalchemy import inspect, text
+from flask_migrate import Migrate
+from flask_jwt_extended import JWTManager
 
 from extensions import db, bcrypt, login_manager, cors, limiter
 from config import config_map
@@ -17,6 +19,11 @@ from routes.audit_log import audit_bp
 
 from search import search_bp
 from notifications import notifications_bp
+from routes.all_settings import settings_bp
+
+
+migrate = Migrate()
+jwt = JWTManager()
 
 load_dotenv()
 
@@ -26,13 +33,16 @@ USER_ROLES = ("owner", "admin", "manager", "staff", "accountant")
 
 def create_app(config_name="development"):
     app = Flask(__name__, static_folder=None)
+    app.url_map.strict_slashes = False
     app.config.from_object(config_map[config_name])
 
     db.init_app(app)
     bcrypt.init_app(app)
     login_manager.init_app(app)
     login_manager.login_view = "login"
-    cors.init_app(app, supports_credentials=True, origins=["http://localhost:5173"])
+    migrate.init_app(app, db)
+    jwt.init_app(app)
+    cors.init_app(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
     limiter.init_app(app)
     app.register_error_handler(429, rate_limit_exceeded)
 
@@ -44,6 +54,7 @@ def create_app(config_name="development"):
     app.register_blueprint(audit_bp, url_prefix="/api")
     app.register_blueprint(search_bp, url_prefix="/api")
     app.register_blueprint(notifications_bp, url_prefix="/api")
+    app.register_blueprint(settings_bp)
 
     with app.app_context():
         if inspect(db.engine).has_table("user"):

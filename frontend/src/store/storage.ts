@@ -17,7 +17,9 @@ interface StoredPayload {
 
 function isValidPayload(value: unknown): value is StoredPayload {
   if (!value || typeof value !== 'object') return false;
+
   const candidate = value as Partial<StoredPayload>;
+
   return (
     candidate.version === STORAGE_VERSION &&
     !!candidate.state &&
@@ -25,19 +27,57 @@ function isValidPayload(value: unknown): value is StoredPayload {
   );
 }
 
+function mergeWithInitialState(savedState: AppState): AppState {
+  return {
+    ...initialState,
+    ...savedState,
+    settings: {
+      ...initialState.settings,
+      ...savedState.settings,
+      business: {
+        ...initialState.settings.business,
+        ...savedState.settings?.business,
+      },
+      invoices: {
+        ...initialState.settings.invoices,
+        ...savedState.settings?.invoices,
+      },
+      lists: {
+        ...initialState.settings.lists,
+        ...savedState.settings?.lists,
+      },
+      users: {
+        ...initialState.settings.users,
+        ...savedState.settings?.users,
+      },
+      account: {
+        ...initialState.settings.account,
+        ...savedState.settings?.account,
+      },
+      data: {
+        ...initialState.settings.data,
+        ...savedState.settings?.data,
+      },
+    },
+  };
+}
+
 // Loads saved data. Falls back to the sample data if nothing is saved,
 // the saved data is unreadable, or it's from an older/incompatible version.
 export async function loadState(): Promise<AppState> {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
+
     if (!raw) return initialState;
 
     const parsed: unknown = JSON.parse(raw);
+
     if (!isValidPayload(parsed)) return initialState;
 
-    return parsed.state;
+    return mergeWithInitialState(parsed.state);
   } catch {
-    // Corrupted/unreadable JSON (e.g. random text in zentrio-data) — load sample data instead.
+    // Corrupted/unreadable JSON (e.g. random text in zentrio-data) —
+    // load sample data instead.
     return initialState;
   }
 }
@@ -46,7 +86,11 @@ export async function loadState(): Promise<AppState> {
 // so callers can catch it and show an error toast — matching how B2 will later
 // need to signal a failed server save without ever claiming a change was saved when it wasn't.
 export async function saveState(state: AppState): Promise<void> {
-  const payload: StoredPayload = { version: STORAGE_VERSION, state };
+  const payload: StoredPayload = {
+    version: STORAGE_VERSION,
+    state,
+  };
+
   localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
 }
 
