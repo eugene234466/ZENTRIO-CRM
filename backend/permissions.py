@@ -57,6 +57,8 @@ ACTION_INVOICES_VOID = "invoices_void"
 ACTION_TEAM_MANAGE = "team_manage"
 ACTION_OWN_TASKS = "own_tasks"
 ACTION_OWN_MESSAGES = "own_messages"
+ACTION_MESSAGES_VIEW = "messages_view"
+ACTION_MESSAGES_CREATE = "messages_create"
 ACTION_PIN_MESSAGES = "pin_messages"
 ACTION_SETTINGS = "settings"
 ACTION_USERS_ROLES = "users_roles"
@@ -78,6 +80,8 @@ ROLE_PERMISSIONS = {
     # export/import, or back up — those stay Admin/Owner-only.
     ROLE_MANAGER: {
         ACTION_REVENUE,
+        ACTION_MESSAGES_VIEW,
+        ACTION_MESSAGES_CREATE,
         ACTION_CLIENTS_VIEW,
         ACTION_CLIENTS_ADD,
         ACTION_CLIENTS_EDIT,
@@ -94,6 +98,8 @@ ROLE_PERMISSIONS = {
         ACTION_PIN_MESSAGES,
     },
     ROLE_STAFF: {
+        ACTION_MESSAGES_VIEW,
+        ACTION_MESSAGES_CREATE,
         ACTION_CLIENTS_VIEW,
         ACTION_CLIENTS_ADD,
         ACTION_CLIENTS_EDIT,
@@ -106,6 +112,8 @@ ROLE_PERMISSIONS = {
     },
     ROLE_ACCOUNTANT: {
         ACTION_REVENUE,
+        ACTION_MESSAGES_VIEW,
+        ACTION_MESSAGES_CREATE,
         ACTION_CLIENTS_VIEW,
         ACTION_INVOICES_VIEW,
         ACTION_INVOICES_CREATE,
