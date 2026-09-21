@@ -219,6 +219,7 @@ export type View =
   | 'receipts'
   | 'team'
   | 'board'
+  | 'profile'
   | 'settings';
 
 
