@@ -5,6 +5,8 @@ from dotenv import load_dotenv
 from flask_migrate import Migrate
 from flask_jwt_extended import JWTManager
 
+load_dotenv()
+
 from extensions import db, bcrypt, login_manager, cors, limiter
 from config import config_map
 from models import User
@@ -24,8 +26,6 @@ from routes.messages import messages_bp
 
 migrate = Migrate()
 jwt = JWTManager()
-
-load_dotenv()
 
 FRONTEND_DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"
 USER_ROLES = ("owner", "admin", "manager", "staff", "accountant")
