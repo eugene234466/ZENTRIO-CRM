@@ -245,7 +245,7 @@ const AuthPage = ({ onAuthenticated }: { onAuthenticated: (user: AuthUser) => vo
   );
 };
 
-const CrmApp = ({ user, onLogout }: { user: AuthUser; onLogout: () => void }) => {
+const CrmApp = ({ user }: { user: AuthUser }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [clientSearch, setClientSearch] = useState('');
 
@@ -433,7 +433,16 @@ const CrmApp = ({ user, onLogout }: { user: AuthUser; onLogout: () => void }) =>
       <main className="flex-1 flex flex-col min-h-screen overflow-hidden">
         <Topbar
           onMenuClick={() => setSidebarOpen(true)}
-          onLogout={onLogout}
+          user={user}
+          onGoProfile={() => setView('profile')}
+          onPickSearchResult={(result) => {
+            const viewByType = {
+              client: 'clients',
+              lead: 'leads',
+              invoice: 'invoices',
+            } as const;
+            setView(viewByType[result.type]);
+          }}
         />
 
         <div className="flex-1 overflow-y-auto scrollbar-thin p-3 sm:p-4 lg:p-6">
@@ -463,16 +472,11 @@ function App() {
       .finally(() => setIsCheckingSession(false));
   }, []);
 
-  const handleLogout = async () => {
-    await authRequest('/auth/logout', { method: 'POST' }).catch(() => undefined);
-    setUser(null);
-  };
-
   if (isCheckingSession) {
     return <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center text-[var(--text-muted)]">Checking session...</div>;
   }
 
-  return user ? <CrmApp user={user} onLogout={handleLogout} /> : <AuthPage onAuthenticated={setUser} />;
+  return user ? <CrmApp user={user} /> : <AuthPage onAuthenticated={setUser} />;
 }
 
 export default App;
