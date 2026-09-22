@@ -274,11 +274,6 @@ const CrmApp = ({ user }: { user: AuthUser }) => {
     updateTask,
     deleteTask,
 
-    // Message Board
-    addMessage,
-    pinMessage,
-    unpinMessage,
-
     // Settings
     updateSettings,
   } = useAppState();
@@ -366,10 +361,6 @@ const CrmApp = ({ user }: { user: AuthUser }) => {
       case 'board':
         return (
           <MessageBoardSection
-            state={state}
-            addMessage={addMessage}
-            pinMessage={pinMessage}
-            unpinMessage={unpinMessage}
             addToast={addToast}
             currentUser={user}
           />
@@ -418,7 +409,14 @@ const CrmApp = ({ user }: { user: AuthUser }) => {
           onMenuClick={() => setSidebarOpen(true)}
           user={user}
           onGoProfile={() => setView('settings')}
-          onPickSearchResult={() => undefined}
+          onPickSearchResult={(result) => {
+            const viewByType = {
+              client: 'clients',
+              lead: 'leads',
+              invoice: 'invoices',
+            } as const;
+            setView(viewByType[result.type]);
+          }}
         />
 
         <div className="flex-1 overflow-y-auto scrollbar-thin p-3 sm:p-4 lg:p-6">
@@ -447,11 +445,6 @@ function App() {
       .catch(() => setUser(null))
       .finally(() => setIsCheckingSession(false));
   }, []);
-
-  const handleLogout = async () => {
-    await authRequest('/auth/logout', { method: 'POST' }).catch(() => undefined);
-    setUser(null);
-  };
 
   if (isCheckingSession) {
     return <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center text-[var(--text-muted)]">Checking session...</div>;

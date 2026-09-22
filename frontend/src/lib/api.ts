@@ -32,6 +32,15 @@ export interface AuthUser {
   role: string;
 }
 
+export interface BoardMessage {
+  id: number;
+  content: string;
+  author: AuthUser;
+  is_pinned: boolean;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
 export const api = {
   signup: (input: { username: string; email: string; password: string }) =>
     request<{ msg: string; username: string; email: string }>('/auth/signup', {
@@ -60,6 +69,31 @@ export const api = {
 
   search: (q: string) =>
     request<{ results: SearchResult[] }>(`/api/search?q=${encodeURIComponent(q)}`),
+
+  messages: () => request<{ messages: BoardMessage[] }>('/api/messages'),
+
+  createMessage: (content: string) =>
+    request<BoardMessage>('/api/messages', {
+      method: 'POST',
+      body: JSON.stringify({ content }),
+    }),
+
+  updateMessage: (id: number, content: string) =>
+    request<BoardMessage>(`/api/messages/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ content }),
+    }),
+
+  deleteMessage: (id: number) =>
+    request<{ message: string }>(`/api/messages/${id}`, {
+      method: 'DELETE',
+    }),
+
+  setMessagePinned: (id: number, isPinned: boolean) =>
+    request<BoardMessage>(`/api/messages/${id}/pin`, {
+      method: 'PATCH',
+      body: JSON.stringify({ is_pinned: isPinned }),
+    }),
 };
 
 export interface SearchResult {

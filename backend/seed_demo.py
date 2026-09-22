@@ -5,10 +5,11 @@ skipped, so it is safe to re-run. Records are split between the admin and
 staff dev accounts so permission contrast (own vs all) can be exercised.
 """
 
+import os
 from datetime import date
 
 from app import create_app
-from extensions import db
+from extensions import bcrypt, db
 from models import Contacts, Deal, Invoice, User
 
 ADMIN_USERNAME = "admin"
@@ -19,13 +20,35 @@ def _get(model, **filters):
     return model.query.filter_by(**filters).first()
 
 
+def _ensure_dev_user(username, email, role, password):
+    user = User.query.filter_by(username=username).first()
+    if user is None:
+        user = User(
+            username=username,
+            email=email,
+            password=bcrypt.generate_password_hash(password).decode("utf-8"),
+            role=role,
+        )
+        db.session.add(user)
+        db.session.flush()
+    return user
+
+
 def seed():
     app = create_app("development")
     with app.app_context():
-        admin = User.query.filter_by(username=ADMIN_USERNAME).first()
-        staff = User.query.filter_by(username=STAFF_USERNAME).first()
-        if admin is None or staff is None:
-            raise SystemExit("Seed requires the 'admin' and 'staff' dev users to exist.")
+        admin = _ensure_dev_user(
+            ADMIN_USERNAME,
+            os.environ.get("ADMIN_EMAIL", "admin@localhost.test"),
+            "admin",
+            os.environ.get("ADMIN_PASSWORD", "admin1234"),
+        )
+        staff = _ensure_dev_user(
+            STAFF_USERNAME,
+            os.environ.get("STAFF_EMAIL", "staff@localhost.test"),
+            "staff",
+            os.environ.get("STAFF_PASSWORD", "staff1234"),
+        )
 
         clients = [
             # (name, phone, email, address, owner)

@@ -5,6 +5,8 @@ from dotenv import load_dotenv
 from flask_migrate import Migrate
 from flask_jwt_extended import JWTManager
 
+load_dotenv()
+
 from extensions import db, bcrypt, login_manager, cors, limiter
 from config import config_map
 from models import User
@@ -20,12 +22,11 @@ from routes.audit_log import audit_bp
 from search import search_bp
 from notifications import notifications_bp
 from routes.all_settings import settings_bp
+from routes.messages import messages_bp
 
 
 migrate = Migrate()
 jwt = JWTManager()
-
-load_dotenv()
 
 FRONTEND_DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"
 USER_ROLES = ("owner", "admin", "manager", "staff", "accountant")
@@ -56,6 +57,7 @@ def create_app(config_name="development"):
     app.register_blueprint(search_bp, url_prefix="/api")
     app.register_blueprint(notifications_bp, url_prefix="/api")
     app.register_blueprint(settings_bp)
+    app.register_blueprint(messages_bp)
 
 
     @app.route("/", defaults={"path": ""})
