@@ -284,11 +284,6 @@ const CrmApp = ({ user }: { user: AuthUser }) => {
     updateTask,
     deleteTask,
 
-    // Message Board
-    addMessage,
-    pinMessage,
-    unpinMessage,
-
     // Settings
     updateSettings,
   } = useAppState();
@@ -376,10 +371,6 @@ const CrmApp = ({ user }: { user: AuthUser }) => {
       case 'board':
         return (
           <MessageBoardSection
-            state={state}
-            addMessage={addMessage}
-            pinMessage={pinMessage}
-            unpinMessage={unpinMessage}
             addToast={addToast}
             currentUser={user}
           />
