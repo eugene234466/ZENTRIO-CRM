@@ -145,7 +145,7 @@ export const MessageBoardSection = ({
 
   return (
     <div className="space-y-4 sm:space-y-6 pb-20 lg:pb-0">
-      <h2 className="text-xl sm:text-2xl font-bold text-[var(--text-main)]">Intern Message Board</h2>
+      <h2 className="text-xl sm:text-2xl font-bold text-[var(--text-main)]">Message Board</h2>
 
       {/* Compose */}
       <Card className="bg-[var(--card-bg)] border-[var(--border-color)] rounded-2xl sm:rounded-[28px]">
