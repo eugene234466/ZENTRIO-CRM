@@ -408,7 +408,7 @@ const CrmApp = ({ user }: { user: AuthUser }) => {
         <Topbar
           onMenuClick={() => setSidebarOpen(true)}
           user={user}
-          onGoProfile={() => setView('profile')}
+          onGoProfile={() => setView('settings')}
           onPickSearchResult={(result) => {
             const viewByType = {
               client: 'clients',
