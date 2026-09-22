@@ -16,6 +16,7 @@ from routes.contacts import contacts_bp
 from routes.pipeline import pipeline_bp
 from routes.leads import leads_bp
 from routes.dashboard import dashboard_bp
+from routes.invoices import invoices_bp
 from routes.audit_log import audit_bp
 
 from search import search_bp
@@ -51,6 +52,7 @@ def create_app(config_name="development"):
     app.register_blueprint(pipeline_bp, url_prefix="/api")
     app.register_blueprint(leads_bp, url_prefix="/api")
     app.register_blueprint(dashboard_bp, url_prefix="/api")
+    app.register_blueprint(invoices_bp)
     app.register_blueprint(audit_bp, url_prefix="/api")
     app.register_blueprint(search_bp, url_prefix="/api")
     app.register_blueprint(notifications_bp, url_prefix="/api")

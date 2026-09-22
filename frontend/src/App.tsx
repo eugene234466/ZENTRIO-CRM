@@ -1,17 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 
 import {
-  LayoutDashboard, Users, Kanban, FileText, Receipt as ReceiptIcon, UsersRound,
-  MessageSquare, Plus, Search, Bell, Menu, X, Sun, Moon,
-  Calendar, TrendingUp, Clock, CheckCircle, Eye, Download, Share2,
-  AlertCircle, DollarSign, Filter, Edit, Trash2,
-  Send, Pin, CheckCircle2, Circle,
-  Clock3, Building2, GraduationCap, Heart, Briefcase, ChevronLeft
+  Bell, CheckCircle, AlertCircle, X
 } from 'lucide-react';
-import {
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, AreaChart, Area
-} from 'recharts';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useAppState } from '@/hooks/useAppState';
@@ -34,7 +25,6 @@ import { ReceiptsSection } from '@/pages/ReceiptsSection';
 import { TeamSection } from '@/pages/TeamSection';
 import { MessageBoardSection } from '@/pages/MessageBoardSection';
 import { SettingsSection } from '@/pages/SettingsSection';
-import { ProfileSection } from '@/pages/ProfileSection';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -373,13 +363,6 @@ const CrmApp = ({ user }: { user: AuthUser }) => {
           <MessageBoardSection
             addToast={addToast}
             currentUser={user}
-          />
-        );
-
-      case 'profile':
-        return (
-          <ProfileSection
-            addToast={addToast}
           />
         );
 
