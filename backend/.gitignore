@@ -1,0 +1,11 @@
+﻿.env
+.postman/
+postman/
+__pycache__/
+*.pyc
+*.pyc
+*.log
+venv/
+.vscode/
+uploads/
+*.local

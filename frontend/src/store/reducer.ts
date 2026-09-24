@@ -96,8 +96,8 @@ const defaultSettings: Settings = {
 
 export const initialState: AppState = {
   currentView: 'dashboard',
-  clients: seedClients,
-  leads: seedLeads,
+  clients: [],
+  leads: [],
   invoices: seedInvoices,
   receipts: seedReceipts,
   team: seedTeam,
