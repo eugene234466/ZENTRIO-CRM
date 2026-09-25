@@ -9,7 +9,10 @@ from alembic import op
 import sqlalchemy as sa
 
 revision = "c2e7b4a1d901"
-down_revision = "b6539132fa33"
+# This merges the existing invoice and message-ownership branches before
+# adding boards. Keeping it as a single head makes `flask db upgrade` work
+# without requiring a revision target.
+down_revision = ("52dfc1df2de2", "20260919msgown")
 branch_labels = None
 depends_on = None
 
