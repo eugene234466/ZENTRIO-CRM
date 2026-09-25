@@ -34,6 +34,8 @@ class User(db.Model, UserMixin):
     email = db.Column(db.String(120), nullable=False, unique=True)
     password = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(20), default="staff", nullable=False)
+    # NEW: optional avatar path/url for the Profile page.
+    avatar = db.Column(db.String(512), nullable=True)
 
 
 class Contacts(db.Model):
@@ -52,24 +54,68 @@ class Contacts(db.Model):
     deleted_at = db.Column(db.DateTime(timezone=True))
 
 
+class Client(db.Model):
+    """Frontend-facing client record. Distinct from Contacts (untouched)."""
+    __tablename__ = "client"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(120), nullable=False)
+    company = db.Column(db.String(120), nullable=True)
+    email = db.Column(db.String(120), nullable=False)
+    phone = db.Column(db.String(40), nullable=False)
+    # 'SME' | 'School' | 'Healthcare' | 'Enterprise'
+    type = db.Column(db.String(20), default="SME", nullable=False)
+    # 'Active' | 'Lead' | 'Prospect'
+    status = db.Column(db.String(20), default="Lead", nullable=False)
+    last_contact = db.Column(db.String(40), default="Today", nullable=False)
+    created_at = db.Column(
+        db.DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+    assigned_to_id = db.Column(db.Integer, db.ForeignKey("user.id"))
+    deleted_at = db.Column(db.DateTime(timezone=True))
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "company": self.company or "",
+            "email": self.email,
+            "phone": self.phone,
+            "type": self.type,
+            "status": self.status,
+            "last_contact": self.last_contact,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
+
 class Deal(db.Model):
     __tablename__ = "deal"
 
     id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(200), nullable=False)
-    contact_id = db.Column(db.Integer, db.ForeignKey("contacts.id"), nullable=False)
+    # title / contact_id relaxed to nullable so the frontend can create a Deal
+    # from a Lead without needing a Contacts row or a separate title.
+    title = db.Column(db.String(200), nullable=True)
+    contact_id = db.Column(db.Integer, db.ForeignKey("contacts.id"), nullable=True)
     value = db.Column(db.Float, default=0)
     stage = db.Column(db.String(20), default="NEW")
     assigned_to_id = db.Column(db.Integer, db.ForeignKey("user.id"))
-    created_at = db.Column(
-        db.DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
-    )
-    updated_at = db.Column(
-        db.DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
-    )
+    created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     deleted_at = db.Column(db.DateTime(timezone=True))
+
+    # NEW: fields the frontend Lead type carries.
+    name = db.Column(db.String(200), nullable=True)
+    company = db.Column(db.String(200), nullable=True)
+    email = db.Column(db.String(120), nullable=True)
+    # 'Hot' | 'Warm' | 'Cold'
+    temperature = db.Column(db.String(20), default="Warm")
+    # 'Referral' | 'Social' | 'Direct' | 'Other'
+    source = db.Column(db.String(40), default="Direct")
+    # frontend sends 'YYYY-MM-DD' as a string.
+    expected_close_date = db.Column(db.String(40), nullable=True)
+    notes = db.Column(db.Text, nullable=True)
 
     def to_dict(self):
         return {
@@ -81,6 +127,14 @@ class Deal(db.Model):
             "assigned_to_id": self.assigned_to_id,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+            # NEW fields exposed to the frontend.
+            "name": self.name,
+            "company": self.company,
+            "email": self.email,
+            "temperature": self.temperature,
+            "source": self.source,
+            "expected_close_date": self.expected_close_date,
+            "notes": self.notes,
         }
 
 
@@ -337,23 +391,19 @@ class AuditLog(db.Model):
     )
 
 
-
-
-
 class BusinessProfile(db.Model):
     __tablename__ = 'business_profiles'
 
-    id = db.Column(db.Integer,primary_key=True)
-    user_id = db.Column(db.Integer,nullable=False,unique=True)
-    company_name = db.Column(db.String(255),nullable=True)
-    address = db.Column(db.Text,nullable=True)
-    tax_id = db.Column(db.String(100),nullable=True)
-    currency = db.Column(db.String(10),default='USD')
-    timezone = db.Column(db.String(100),default='UTC')
-    logo_url = db.Column(db.String(512),nullable=True)
-    created_at = db.Column(db.DateTime,default=datetime.utcnow)
-
-    updated_at = db.Column(db.DateTime,default=datetime.utcnow,onupdate=datetime.utcnow)
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, nullable=False, unique=True)
+    company_name = db.Column(db.String(255), nullable=True)
+    address = db.Column(db.Text, nullable=True)
+    tax_id = db.Column(db.String(100), nullable=True)
+    currency = db.Column(db.String(10), default='USD')
+    timezone = db.Column(db.String(100), default='UTC')
+    logo_url = db.Column(db.String(512), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     def to_dict(self):
         return {
@@ -372,14 +422,14 @@ class BusinessProfile(db.Model):
 class InvoiceSettings(db.Model):
     __tablename__ = 'invoice_settings'
 
-    id = db.Column(db.Integer,primary_key=True)
-    user_id = db.Column(db.Integer,nullable=False,unique=True)
-    prefix = db.Column(db.String(20),default='INV-')
-    next_number = db.Column(db.Integer,default=1001)
-    tax_rate = db.Column(db.Float,default=0.0)
-    tax_enabled = db.Column(db.Boolean,default=True)
-    created_at = db.Column(db.DateTime,default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime,default=datetime.utcnow,onupdate=datetime.utcnow)
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, nullable=False, unique=True)
+    prefix = db.Column(db.String(20), default='INV-')
+    next_number = db.Column(db.Integer, default=1001)
+    tax_rate = db.Column(db.Float, default=0.0)
+    tax_enabled = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     def to_dict(self):
         return {
@@ -392,15 +442,16 @@ class InvoiceSettings(db.Model):
         }
 
 
-
 class PaymentMethod(db.Model):
     __tablename__ = 'payment_methods'
-    id = db.Column(db.Integer,primary_key=True)
-    user_id = db.Column(db.Integer,nullable=False)
-    method_type = db.Column(db.String(50),nullable=False)
-    details = db.Column(db.Text,nullable=True)
-    is_active = db.Column(db.Boolean,default=True)
-    created_at = db.Column(db.DateTime,default=datetime.utcnow)
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, nullable=False)
+    method_type = db.Column(db.String(50), nullable=False)
+    details = db.Column(db.Text, nullable=True)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
     def to_dict(self):
         return {
             'id': self.id,
@@ -410,18 +461,19 @@ class PaymentMethod(db.Model):
             'is_active': self.is_active,
         }
 
+
 class TeamMember(db.Model):
     __tablename__ = 'team_members'
 
-    id = db.Column(db.Integer,primary_key=True)
-    owner_id = db.Column(db.Integer,nullable=False)
-    name = db.Column(db.String(255),nullable=False)
-    email = db.Column(db.String(255),nullable=False)
-    role = db.Column(db.String(100),nullable=False)
-    avatar = db.Column(db.String(512),nullable=True)
-    status = db.Column(db.String(50),default='Active')
-    created_at = db.Column(db.DateTime,default=datetime.utcnow)
-    tasks = db.relationship('TeamTask',backref='member',cascade='all, delete-orphan',lazy=True)
+    id = db.Column(db.Integer, primary_key=True)
+    owner_id = db.Column(db.Integer, nullable=False)
+    name = db.Column(db.String(255), nullable=False)
+    email = db.Column(db.String(255), nullable=False)
+    role = db.Column(db.String(100), nullable=False)
+    avatar = db.Column(db.String(512), nullable=True)
+    status = db.Column(db.String(50), default='Active')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    tasks = db.relationship('TeamTask', backref='member', cascade='all, delete-orphan', lazy=True)
 
     def to_dict(self):
         return {
@@ -431,22 +483,19 @@ class TeamMember(db.Model):
             'role': self.role,
             'avatar': self.avatar or '',
             'status': self.status,
-            'tasks': [
-                task.to_dict()
-                for task in self.tasks
-            ],
+            'tasks': [task.to_dict() for task in self.tasks],
         }
 
 
 class TeamTask(db.Model):
     __tablename__ = 'team_tasks'
 
-    id = db.Column(db.Integer,primary_key=True)
-    team_member_id = db.Column(db.Integer,db.ForeignKey('team_members.id'),nullable=False)
-    title = db.Column(db.String(255),nullable=False)
-    status = db.Column( db.String(50),default='Pending')
-    due_date = db.Column(db.String(50),nullable=True)
-    created_at = db.Column(db.DateTime,default=datetime.utcnow)
+    id = db.Column(db.Integer, primary_key=True)
+    team_member_id = db.Column(db.Integer, db.ForeignKey('team_members.id'), nullable=False)
+    title = db.Column(db.String(255), nullable=False)
+    status = db.Column(db.String(50), default='Pending')
+    due_date = db.Column(db.String(50), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def to_dict(self):
         return {
@@ -466,8 +515,8 @@ class ListSettings(db.Model):
     client_types = db.Column(db.Text, nullable=True)
     lead_stages = db.Column(db.Text, nullable=True)
     lead_temperatures = db.Column(db.Text, nullable=True)
-    created_at = db.Column(db.DateTime,default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime,default=datetime.utcnow,onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     def to_dict(self):
         import json
@@ -475,16 +524,17 @@ class ListSettings(db.Model):
         def parse_json(value, fallback):
             if not value:
                 return fallback
-
             try:
                 return json.loads(value)
             except (TypeError, ValueError):
                 return fallback
 
-        return {'id': self.id,'user_id': self.user_id,'client_types': parse_json(self.client_types,['SME', 'Enterprise', 'Individual']),
-
-            'lead_stages': parse_json(self.lead_stages,['New', 'Contacted', 'Qualified', 'Proposal', 'Won', 'Lost']),
-            'lead_temperatures': parse_json(self.lead_temperatures,['Hot', 'Warm', 'Cold']),
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'client_types': parse_json(self.client_types, ['SME', 'Enterprise', 'Individual']),
+            'lead_stages': parse_json(self.lead_stages, ['New', 'Contacted', 'Qualified', 'Proposal', 'Won', 'Lost']),
+            'lead_temperatures': parse_json(self.lead_temperatures, ['Hot', 'Warm', 'Cold']),
         }
 
 
@@ -493,14 +543,14 @@ class AccountSettings(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, nullable=False, unique=True)
-    display_name = db.Column(db.String(255),nullable=True)
-    email = db.Column(db.String(255),nullable=True)
-    phone = db.Column(db.String(50),nullable=True)
-    timezone = db.Column(db.String(100),default='UTC')
-    language = db.Column(db.String(20),default='en')
-    date_format = db.Column(db.String(50),default='DD/MM/YYYY')
-    created_at = db.Column(db.DateTime,default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime,default=datetime.utcnow,onupdate=datetime.utcnow)
+    display_name = db.Column(db.String(255), nullable=True)
+    email = db.Column(db.String(255), nullable=True)
+    phone = db.Column(db.String(50), nullable=True)
+    timezone = db.Column(db.String(100), default='UTC')
+    language = db.Column(db.String(20), default='en')
+    date_format = db.Column(db.String(50), default='DD/MM/YYYY')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     def to_dict(self):
         return {

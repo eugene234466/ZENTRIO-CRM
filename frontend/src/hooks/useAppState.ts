@@ -37,6 +37,14 @@ import {
   addTeamMemberTaskApi,
   updateTeamMemberTaskApi,
   deleteTeamMemberTaskApi,
+  fetchClients,
+  createClientApi,
+  updateClientApi,
+  deleteClientApi,
+  fetchLeads,
+  createLeadApi,
+  updateLeadApi,
+  deleteLeadApi,
 } from '@/api';
 
 import {
@@ -63,8 +71,6 @@ export function useAppState() {
   const isHydrating =
     useRef(false);
 
- 
-
   useEffect(() => {
     let cancelled = false;
 
@@ -72,18 +78,21 @@ export function useAppState() {
       try {
         isHydrating.current = true;
 
-       
         const loaded = await loadState();
 
         if (cancelled) return;
 
-       
+        // Strip clients and leads from the hydrated state — those two are
+        // always fetched from the API, so stale localStorage values must not
+        // leak into the reducer before the server responds.
         dispatch({
           type: 'HYDRATE',
-          payload: loaded,
+          payload: {
+            ...loaded,
+            clients: [],
+            leads: [],
+          },
         });
-
-        
 
         const [
           businessResult,
@@ -92,6 +101,8 @@ export function useAppState() {
           listsResult,
           accountResult,
           teamResult,
+          clientsResult,
+          leadsResult,
         ] = await Promise.allSettled([
           getBusinessProfile(),
           getInvoiceSettings(),
@@ -99,11 +110,12 @@ export function useAppState() {
           getListSettings(),
           getAccountSettings(),
           fetchTeamMembers(),
+          fetchClients(),
+          fetchLeads(),
         ]);
 
         if (cancelled) return;
 
-        
         const mergedSettings: Settings = {
           ...loaded.settings,
 
@@ -132,7 +144,6 @@ export function useAppState() {
           },
         };
 
-      
         if (
           businessResult.status ===
           'fulfilled'
@@ -158,7 +169,6 @@ export function useAppState() {
               mergedSettings.business.logo,
           };
 
-        
           if (business.currency) {
             mergedSettings.invoices = {
               ...mergedSettings.invoices,
@@ -174,7 +184,6 @@ export function useAppState() {
           );
         }
 
-        
         if (
           invoiceResult.status ===
           'fulfilled'
@@ -207,7 +216,6 @@ export function useAppState() {
           );
         }
 
-
         if (
           paymentResult.status ===
           'fulfilled'
@@ -236,7 +244,6 @@ export function useAppState() {
           );
         }
 
-       
         if (
           listsResult.status ===
           'fulfilled'
@@ -261,7 +268,6 @@ export function useAppState() {
           );
         }
 
-       
         if (
           accountResult.status ===
           'fulfilled'
@@ -287,8 +293,6 @@ export function useAppState() {
           );
         }
 
-        
-
         let databaseTeam:
           | TeamMember[]
           | null = null;
@@ -306,25 +310,54 @@ export function useAppState() {
           );
         }
 
-       
+        let databaseClients:
+          | Client[]
+          | null = null;
 
-        if (databaseTeam) {
-          dispatch({
-            type: 'HYDRATE',
-            payload: {
-              ...loaded,
-              team: databaseTeam,
-              settings: mergedSettings,
-            },
-          });
+        if (
+          clientsResult.status ===
+          'fulfilled'
+        ) {
+          databaseClients =
+            clientsResult.value as Client[];
         } else {
-          dispatch({
-            type: 'UPDATE_SETTINGS',
-            payload: mergedSettings,
-          });
+          console.error(
+            'Failed to load clients:',
+            clientsResult.reason,
+          );
         }
 
-        
+        let databaseLeads:
+          | Lead[]
+          | null = null;
+
+        if (
+          leadsResult.status ===
+          'fulfilled'
+        ) {
+          databaseLeads =
+            leadsResult.value as Lead[];
+        } else {
+          console.error(
+            'Failed to load leads:',
+            leadsResult.reason,
+          );
+        }
+
+        // Single HYDRATE with everything we successfully fetched.
+        // Any source that failed keeps its (empty) placeholder from the
+        // first dispatch above, so the UI doesn't render stale data.
+        dispatch({
+          type: 'HYDRATE',
+          payload: {
+            ...loaded,
+            clients: databaseClients ?? [],
+            leads: databaseLeads ?? [],
+            team: databaseTeam ?? loaded.team,
+            settings: mergedSettings,
+          },
+        });
+
         previousSettings.current =
           mergedSettings;
 
@@ -335,7 +368,6 @@ export function useAppState() {
           error,
         );
 
-        
         hasHydrated.current = true;
       } finally {
         isHydrating.current = false;
@@ -349,7 +381,9 @@ export function useAppState() {
     };
   }, []);
 
-  
+  // Persist the full state to localStorage on every change. Clients/leads
+  // are API-owned and only cached in memory; the save below is a harmless
+  // snapshot but is not read back for those two arrays (see hydrateState).
   useEffect(() => {
     if (!hasHydrated.current) {
       return;
@@ -362,8 +396,6 @@ export function useAppState() {
       );
     });
   }, [state]);
-
-  
 
   useEffect(() => {
     if (!hasHydrated.current) {
@@ -390,7 +422,6 @@ export function useAppState() {
     const saveSettingsToDatabase =
       async () => {
         try {
-          
           const businessChanged =
             JSON.stringify(
               currentSettings.business,
@@ -419,8 +450,6 @@ export function useAppState() {
             });
           }
 
-          
-
           const invoiceChanged =
             JSON.stringify(
               currentSettings.invoices,
@@ -448,7 +477,6 @@ export function useAppState() {
                   .taxRate > 0,
             });
 
-
             const oldPaymentMethods =
               oldSettings.invoices
                 .paymentMethods || [];
@@ -471,7 +499,6 @@ export function useAppState() {
               const existingMethods =
                 await getPaymentMethods();
 
-              // Remove database methods.
               await Promise.all(
                 existingMethods.map(
                   (method) =>
@@ -481,7 +508,6 @@ export function useAppState() {
                 ),
               );
 
-              // Add current methods.
               await Promise.all(
                 newPaymentMethods
                   .filter(
@@ -499,8 +525,6 @@ export function useAppState() {
               );
             }
           }
-
-         
 
           const listsChanged =
             JSON.stringify(
@@ -526,8 +550,6 @@ export function useAppState() {
             });
           }
 
-         
-
           const accountChanged =
             JSON.stringify(
               currentSettings.account,
@@ -548,7 +570,6 @@ export function useAppState() {
             });
           }
 
-          
           previousSettings.current =
             currentSettings;
         } catch (error) {
@@ -562,8 +583,6 @@ export function useAppState() {
     saveSettingsToDatabase();
   }, [state.settings]);
 
-  
-
   const setView = useCallback(
     (view: View) => {
       dispatch({
@@ -574,86 +593,257 @@ export function useAppState() {
     [],
   );
 
-  
+  // -------------------------------------------------------------------------
+  // CLIENTS — API-backed, same call signatures as before.
+  // -------------------------------------------------------------------------
+
   const addClient = useCallback(
-    (client: Client) => {
-      dispatch({
-        type: 'ADD_CLIENT',
-        payload: client,
-      });
+    async (client: Client) => {
+      try {
+        const saved = await createClientApi({
+          name: client.name,
+          company: client.company,
+          email: client.email,
+          phone: client.phone,
+          type: client.type,
+          status: client.status,
+          lastContact: client.lastContact,
+        });
+
+        // Server owns the id — dispatch the server-returned object.
+        const databaseClient: Client = {
+          ...client,
+          id: saved.id ?? client.id,
+          createdAt: saved.createdAt ?? client.createdAt,
+        };
+
+        dispatch({
+          type: 'ADD_CLIENT',
+          payload: databaseClient,
+        });
+      } catch (error) {
+        console.error(
+          'Failed to save client to database:',
+          error,
+        );
+
+        // Keep the UI functional if the backend is unavailable.
+        dispatch({
+          type: 'ADD_CLIENT',
+          payload: client,
+        });
+      }
     },
     [],
   );
 
   const updateClient = useCallback(
-    (client: Client) => {
-      dispatch({
-        type: 'UPDATE_CLIENT',
-        payload: client,
-      });
+    async (client: Client) => {
+      try {
+        const saved = await updateClientApi(
+          client.id,
+          {
+            name: client.name,
+            company: client.company,
+            email: client.email,
+            phone: client.phone,
+            type: client.type,
+            status: client.status,
+            lastContact: client.lastContact,
+          },
+        );
+
+        const databaseClient: Client = {
+          ...client,
+          id: saved.id ?? client.id,
+          createdAt: saved.createdAt ?? client.createdAt,
+        };
+
+        dispatch({
+          type: 'UPDATE_CLIENT',
+          payload: databaseClient,
+        });
+      } catch (error) {
+        console.error(
+          'Failed to update client:',
+          error,
+        );
+
+        dispatch({
+          type: 'UPDATE_CLIENT',
+          payload: client,
+        });
+      }
     },
     [],
   );
 
   const deleteClient = useCallback(
-    (id: string) => {
-      dispatch({
-        type: 'DELETE_CLIENT',
-        payload: id,
-      });
+    async (id: string) => {
+      try {
+        await deleteClientApi(id);
+
+        dispatch({
+          type: 'DELETE_CLIENT',
+          payload: id,
+        });
+      } catch (error) {
+        console.error(
+          'Failed to delete client:',
+          error,
+        );
+      }
     },
     [],
   );
 
-  
+  // -------------------------------------------------------------------------
+  // LEADS — API-backed, same call signatures as before.
+  // -------------------------------------------------------------------------
 
   const addLead = useCallback(
-    (lead: Lead) => {
-      dispatch({
-        type: 'ADD_LEAD',
-        payload: lead,
-      });
+    async (lead: Lead) => {
+      try {
+        const saved = await createLeadApi({
+          name: lead.name,
+          company: lead.company,
+          email: lead.email,
+          value: lead.value,
+          stage: lead.stage,
+          temperature: lead.temperature,
+          source: lead.source,
+          expectedCloseDate: lead.expectedCloseDate,
+          notes: lead.notes,
+        });
+
+        const databaseLead: Lead = {
+          ...lead,
+          id: saved.id ?? lead.id,
+          createdAt: saved.createdAt ?? lead.createdAt,
+          updatedAt: saved.updatedAt ?? lead.updatedAt,
+        };
+
+        dispatch({
+          type: 'ADD_LEAD',
+          payload: databaseLead,
+        });
+      } catch (error) {
+        console.error(
+          'Failed to save lead to database:',
+          error,
+        );
+
+        dispatch({
+          type: 'ADD_LEAD',
+          payload: lead,
+        });
+      }
     },
     [],
   );
 
   const updateLead = useCallback(
-    (lead: Lead) => {
-      dispatch({
-        type: 'UPDATE_LEAD',
-        payload: lead,
-      });
+    async (lead: Lead) => {
+      try {
+        const saved = await updateLeadApi(
+          lead.id,
+          {
+            name: lead.name,
+            company: lead.company,
+            email: lead.email,
+            value: lead.value,
+            stage: lead.stage,
+            temperature: lead.temperature,
+            source: lead.source,
+            expectedCloseDate: lead.expectedCloseDate,
+            notes: lead.notes,
+          },
+        );
+
+        const databaseLead: Lead = {
+          ...lead,
+          id: saved.id ?? lead.id,
+          createdAt: saved.createdAt ?? lead.createdAt,
+          updatedAt: saved.updatedAt ?? lead.updatedAt,
+        };
+
+        dispatch({
+          type: 'UPDATE_LEAD',
+          payload: databaseLead,
+        });
+      } catch (error) {
+        console.error(
+          'Failed to update lead:',
+          error,
+        );
+
+        dispatch({
+          type: 'UPDATE_LEAD',
+          payload: lead,
+        });
+      }
     },
     [],
   );
 
   const deleteLead = useCallback(
-    (id: string) => {
-      dispatch({
-        type: 'DELETE_LEAD',
-        payload: id,
-      });
+    async (id: string) => {
+      try {
+        await deleteLeadApi(id);
+
+        dispatch({
+          type: 'DELETE_LEAD',
+          payload: id,
+        });
+      } catch (error) {
+        console.error(
+          'Failed to delete lead:',
+          error,
+        );
+      }
     },
     [],
   );
 
   const moveLead = useCallback(
-    (
+    async (
       id: string,
       stage: LeadStage,
     ) => {
-      dispatch({
-        type: 'MOVE_LEAD',
-        payload: {
+      try {
+        const saved = await updateLeadApi(
           id,
-          stage,
-        },
-      });
+          { stage },
+        );
+
+        dispatch({
+          type: 'MOVE_LEAD',
+          payload: {
+            id: saved.id ?? id,
+            stage: saved.stage ?? stage,
+          },
+        });
+      } catch (error) {
+        console.error(
+          'Failed to move lead:',
+          error,
+        );
+
+        dispatch({
+          type: 'MOVE_LEAD',
+          payload: {
+            id,
+            stage,
+          },
+        });
+      }
     },
     [],
   );
 
-  
+  // -------------------------------------------------------------------------
+  // INVOICES / RECEIPTS / MESSAGES — unchanged (local-only for now).
+  // -------------------------------------------------------------------------
 
   const addInvoice = useCallback(
     (invoice: Invoice) => {
@@ -685,8 +875,6 @@ export function useAppState() {
     [],
   );
 
-  
-
   const addReceipt = useCallback(
     (receipt: Receipt) => {
       dispatch({
@@ -697,7 +885,9 @@ export function useAppState() {
     [],
   );
 
-  
+  // -------------------------------------------------------------------------
+  // TEAM — unchanged from before (already API-backed).
+  // -------------------------------------------------------------------------
 
   const addTeamMember =
     useCallback(
@@ -734,8 +924,6 @@ export function useAppState() {
             error,
           );
 
-          // Keep the UI functional if
-          // the backend is unavailable.
           dispatch({
             type: 'ADD_TEAM_MEMBER',
             payload: member,
@@ -811,8 +999,6 @@ export function useAppState() {
       },
       [],
     );
-
- 
 
   const addTask = useCallback(
     async (
@@ -947,7 +1133,9 @@ export function useAppState() {
       [],
     );
 
-
+  // -------------------------------------------------------------------------
+  // MESSAGE BOARD — unchanged.
+  // -------------------------------------------------------------------------
 
   const addMessage = useCallback(
     (message: Message) => {
@@ -980,7 +1168,6 @@ export function useAppState() {
       [],
     );
 
-  
   const updateSettings =
     useCallback(
       (
@@ -994,49 +1181,38 @@ export function useAppState() {
       [],
     );
 
-
-
   return {
     state,
 
-    
     setView,
 
-    
     addClient,
     updateClient,
     deleteClient,
 
-   
     addLead,
     updateLead,
     deleteLead,
     moveLead,
 
-    
     addInvoice,
     updateInvoice,
     deleteInvoice,
 
-    
     addReceipt,
 
-   
     addTeamMember,
     updateTeamMember,
     deleteTeamMember,
 
-   
     addTask,
     updateTask,
     deleteTask,
 
-  
     addMessage,
     pinMessage,
     unpinMessage,
 
-   
     updateSettings,
   };
 }

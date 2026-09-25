@@ -2,6 +2,7 @@ import os
 import json
 
 from flask import Blueprint, request, jsonify, current_app
+from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 
 from models import (
@@ -17,6 +18,14 @@ from models import (
 
 
 settings_bp = Blueprint('settings_bp', __name__)
+
+
+@settings_bp.before_request
+def require_login():
+    if request.method == 'OPTIONS':
+        return None
+    if not current_user.is_authenticated:
+        return jsonify({'error': 'Login required.'}), 401
 
 
 ALLOWED_EXTENSIONS = {
@@ -37,10 +46,8 @@ def allowed_file(filename):
 
 
 def get_current_user_id():
-    # Temporary user ID for testing.
-    # Replace this with your real authenticated user's ID
-    # when authentication is connected.
-    return 1
+    # Real authenticated user's id, from the Flask-Login session.
+    return current_user.id
 
 
 # ============================================================

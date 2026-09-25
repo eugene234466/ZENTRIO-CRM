@@ -16,6 +16,7 @@ export default defineConfig({
     proxy: {
       '/auth': 'http://localhost:5000',
       '/api': 'http://localhost:5000',
+      '/uploads': 'http://localhost:5000',
     },
   },
 });
