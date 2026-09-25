@@ -1,10 +1,11 @@
 import os
 from pathlib import Path
+
 from flask import Flask, abort, jsonify, send_from_directory
 from dotenv import load_dotenv
 from flask_migrate import Migrate
 from flask_jwt_extended import JWTManager
-
+from sqlalchemy import inspect, text
 load_dotenv()
 
 from extensions import db, bcrypt, login_manager, cors, limiter
@@ -13,6 +14,7 @@ from models import User
 
 from routes.auth import auth_bp
 from routes.contacts import contacts_bp
+from routes.clients import clients_bp
 from routes.pipeline import pipeline_bp
 from routes.leads import leads_bp
 from routes.dashboard import dashboard_bp
@@ -43,12 +45,13 @@ def create_app(config_name="development"):
     login_manager.login_view = "login"
     migrate.init_app(app, db)
     jwt.init_app(app)
-    cors.init_app(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
+    cors.init_app(app, resources={r"/api/*": {"origins": "*"}, r"/auth/*": {"origins": "*"}}, supports_credentials=True)
     limiter.init_app(app)
     app.register_error_handler(429, rate_limit_exceeded)
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(contacts_bp)
+    app.register_blueprint(clients_bp)
     app.register_blueprint(pipeline_bp, url_prefix="/api")
     app.register_blueprint(leads_bp, url_prefix="/api")
     app.register_blueprint(dashboard_bp, url_prefix="/api")
@@ -59,6 +62,33 @@ def create_app(config_name="development"):
     app.register_blueprint(settings_bp)
     app.register_blueprint(messages_bp)
 
+    # Ensure upload directories exist at startup so the first upload
+    # doesn't race to create them. Both live under UPLOAD_FOLDER.
+    os.makedirs(
+        app.config.get("UPLOAD_FOLDER", "uploads"),
+        exist_ok=True,
+    )
+    os.makedirs(
+        app.config.get("AVATAR_FOLDER", "uploads/avatars"),
+        exist_ok=True,
+    )
+
+    with app.app_context():
+        if inspect(db.engine).has_table("user"):
+            columns = {column["name"] for column in inspect(db.engine).get_columns("user")}
+            if "role" not in columns:
+                db.session.execute(
+                    text("ALTER TABLE `user` ADD COLUMN role VARCHAR(20) NOT NULL DEFAULT 'staff'")
+                )
+                db.session.commit()
+        db.create_all()
+
+    @app.route("/uploads/<path:filename>")
+    def serve_uploads(filename):
+        # Serves business logos AND avatars — avatars live in a subfolder
+        # of UPLOAD_FOLDER, and the URL path mirrors that layout.
+        upload_root = app.config.get("UPLOAD_FOLDER", "uploads")
+        return send_from_directory(upload_root, filename)
 
     @app.route("/", defaults={"path": ""})
     @app.route("/<path:path>")

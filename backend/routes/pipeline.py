@@ -1,9 +1,10 @@
 """
 pipeline.py
-Eugene's part: Pipeline stage-transition logic for the Leads/Pipeline module.
+Pipeline stage-transition logic for the Leads/Pipeline module.
 """
 
 from datetime import datetime, timezone
+
 from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
 
@@ -17,15 +18,16 @@ from permissions import (
 
 pipeline_bp = Blueprint("pipeline", __name__)
 
-VALID_STAGES = ["NEW", "CONTACTED", "PROPOSAL", "WON", "LOST"]
+VALID_STAGES = ["NEW", "CONTACTED", "QUALIFIED", "PROPOSAL", "WON", "LOST"]
 
 # Which stages a deal is allowed to move to from its current stage
 ALLOWED_TRANSITIONS = {
     "NEW": ["CONTACTED", "LOST"],
-    "CONTACTED": ["PROPOSAL", "LOST"],
+    "CONTACTED": ["QUALIFIED", "PROPOSAL", "LOST"],
+    "QUALIFIED": ["PROPOSAL", "LOST"],
     "PROPOSAL": ["WON", "LOST"],
-    "WON": [],  # terminal state
-    "LOST": [], # terminal state
+    "WON": [],   # terminal state
+    "LOST": [],  # terminal state
 }
 
 
@@ -79,7 +81,7 @@ def move_deal_stage(deal_id):
 @login_required
 def get_pipeline_view():
     """Return open deals grouped by stage, for rendering the pipeline board."""
-    open_stages = ["NEW", "CONTACTED", "PROPOSAL"]
+    open_stages = ["NEW", "CONTACTED", "QUALIFIED", "PROPOSAL"]
     deals = live(Deal).filter(Deal.stage.in_(open_stages)).all()
 
     grouped = {stage: [] for stage in open_stages}

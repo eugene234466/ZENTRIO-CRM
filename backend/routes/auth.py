@@ -1,7 +1,10 @@
 from functools import wraps
-from flask import Blueprint, request, jsonify, session
+import os
+
+from flask import Blueprint, request, jsonify, session, current_app
 from flask_login import current_user, login_user, login_required, logout_user
 from werkzeug.datastructures import MultiDict
+from werkzeug.utils import secure_filename
 
 from forms import SignUpForm, LoginForm
 from extensions import db, bcrypt, limiter
@@ -20,6 +23,17 @@ USER_ROLES = {"owner", "admin", "manager", "staff", "accountant"}
 auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
 
 
+# Same allow-list as all_settings.py's logo upload — keep them in sync.
+ALLOWED_AVATAR_EXTENSIONS = {"png", "jpg", "jpeg", "svg", "webp"}
+
+
+def _allowed_avatar(filename: str) -> bool:
+    return (
+        "." in filename
+        and filename.rsplit(".", 1)[1].lower() in ALLOWED_AVATAR_EXTENSIONS
+    )
+
+
 def _first_error(form):
     for field_errors in form.errors.values():
         if field_errors:
@@ -31,6 +45,16 @@ def _login_key():
     data = request.get_json(silent=True) or {}
     username = str(data.get("username") or "").strip().lower()
     return f"{get_remote_address()}:{username}"
+
+
+def _user_to_dict(user: User) -> dict:
+    return {
+        "id": user.id,
+        "username": user.username,
+        "email": user.email,
+        "role": user.role,
+        "avatar": user.avatar or "",
+    }
 
 
 @auth_bp.route("/signup", methods=["POST"])
@@ -80,12 +104,60 @@ def login():
 @auth_bp.route("/me", methods=["GET"])
 @login_required
 def me():
+    return jsonify(_user_to_dict(current_user)), 200
+
+
+@auth_bp.route("/me/avatar", methods=["POST"])
+@login_required
+def upload_avatar():
+    """Upload or replace the current user's avatar image."""
+    if "avatar" not in request.files:
+        return jsonify({"error": "No file part in the request"}), 400
+
+    file = request.files["avatar"]
+
+    if file.filename == "":
+        return jsonify({"error": "No selected file"}), 400
+
+    if not _allowed_avatar(file.filename):
+        return jsonify({"error": "File type not allowed"}), 400
+
+    ext = file.filename.rsplit(".", 1)[1].lower()
+    filename = secure_filename(f"user_{current_user.id}_avatar.{ext}")
+
+    avatar_folder = current_app.config.get("AVATAR_FOLDER", "uploads/avatars")
+    os.makedirs(avatar_folder, exist_ok=True)
+
+    file_path = os.path.join(avatar_folder, filename)
+    file.save(file_path)
+
+    avatar_url = f"/uploads/avatars/{filename}"
+
+    current_user.avatar = avatar_url
+    db.session.commit()
+
+    audit("avatar_update", "user", current_user.id, f"avatar={avatar_url!r}")
+    db.session.commit()
+
     return jsonify({
-        "id": current_user.id,
-        "username": current_user.username,
-        "email": current_user.email,
-        "role": current_user.role,
+        "avatar": avatar_url,
+        "message": "Avatar uploaded successfully",
     }), 200
+
+
+# ---------------------------------------------------------------------------
+# Users list + role management (Settings → Users tab)
+# ---------------------------------------------------------------------------
+
+@auth_bp.route("/users", methods=["GET"])
+@login_required
+def list_users():
+    """Return every user. Only owner/admin can see the full list."""
+    if not can(current_user, ACTION_USERS_ROLES):
+        return jsonify({"error": "You don't have access."}), 403
+
+    users = User.query.order_by(User.id.asc()).all()
+    return jsonify({"users": [_user_to_dict(u) for u in users]}), 200
 
 
 @auth_bp.route("/users/<int:user_id>/role", methods=["PATCH"])
@@ -107,12 +179,20 @@ def update_role(user_id):
     if role == ROLE_OWNER and role_of(current_user) != ROLE_OWNER:
         return jsonify({"error": "Only the Owner can hand over ownership."}), 403
 
+    # Refuse a change that would leave zero owners in the system.
+    if user.role == ROLE_OWNER and role != ROLE_OWNER:
+        owner_count = User.query.filter_by(role=ROLE_OWNER).count()
+        if owner_count <= 1:
+            return jsonify({
+                "error": "Cannot remove the last Owner. Promote another user to Owner first."
+            }), 400
+
     old_role = user.role
     user.role = role
     db.session.commit()
     audit("role_change", "user", user.id, f"{user.username!r}: {old_role} -> {role}")
     db.session.commit()
-    return jsonify({"msg": "Role updated.", "username": user.username, "role": user.role}), 200
+    return jsonify({"msg": "Role updated.", "user": _user_to_dict(user)}), 200
 
 
 @auth_bp.route("/logout", methods=["POST"])

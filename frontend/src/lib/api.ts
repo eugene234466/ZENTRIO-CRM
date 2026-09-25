@@ -42,22 +42,8 @@ export interface BoardMessage {
 }
 
 export const api = {
-  signup: (input: { username: string; email: string; password: string }) =>
-    request<{ msg: string; username: string; email: string }>('/auth/signup', {
-      method: 'POST',
-      body: JSON.stringify(input),
-    }),
-
-  login: (input: { username: string; password: string }) =>
-    request<{ msg: string; username: string; role: string }>('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify(input),
-    }),
-
-  me: () => request<AuthUser>('/auth/me'),
-
-  logout: () => request<{ msg: string }>('/auth/logout', { method: 'POST' }),
-
+  // Auth endpoints intentionally live in @/components/Login-register/authApi.
+  // Keep this module to app data only (search, notifications).
   notifications: () =>
     request<{ notifications: AppNotification[] }>('/api/notifications'),
 

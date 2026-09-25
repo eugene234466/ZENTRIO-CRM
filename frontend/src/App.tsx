@@ -1,17 +1,16 @@
-import { useState, useEffect } from 'react';
-
-import {
-  Bell, CheckCircle, AlertCircle, X
-} from 'lucide-react';
+import { useState } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { useAppState } from '@/hooks/useAppState';
-import { useToast } from '@/hooks/useToast';
-import './App.css';
-
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useAppState } from '@/hooks/useAppState';
+import { useToast } from '@/hooks/useToast';
+import { useAuth } from '@/hooks/useAuth';
+import { ToastContainer } from '@/components/statusBadge';
+import type { AuthUser } from '@/components/Login-register/authApi';
+import type { SearchResult } from '@/lib/api';
+import './App.css';
 
 import { Sidebar } from '@/components/layout/Sidebar';
 import { BottomNav } from '@/components/layout/BottomNav';
@@ -25,66 +24,13 @@ import { ReceiptsSection } from '@/pages/ReceiptsSection';
 import { TeamSection } from '@/pages/TeamSection';
 import { MessageBoardSection } from '@/pages/MessageBoardSection';
 import { SettingsSection } from '@/pages/SettingsSection';
+import { ProfileSection } from '@/pages/ProfileSection';
 
 gsap.registerPlugin(ScrollTrigger);
 
-const ToastContainer = ({
-  toasts,
-  removeToast,
-}: {
-  toasts: ReturnType<typeof useToast>['toasts'];
-  removeToast: (id: string) => void;
-}) => {
-  return (
-    <div className="fixed top-4 right-4 z-[100] space-y-2 pointer-events-none">
-      {toasts.map((toast) => (
-        <div
-          key={toast.id}
-          className={`px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 min-w-[280px] max-w-[90vw] animate-slide-in pointer-events-auto ${toast.type === 'success' ? 'bg-[#7DD3A6] text-white' :
-            toast.type === 'error' ? 'bg-[#E57A7A] text-white' :
-              'bg-[#F2C94C] text-[#1a1a2e]'
-            }`}
-        >
-          {toast.type === 'success' && <CheckCircle className="w-5 h-5 flex-shrink-0" />}
-          {toast.type === 'error' && <AlertCircle className="w-5 h-5 flex-shrink-0" />}
-          {toast.type === 'info' && <Bell className="w-5 h-5 flex-shrink-0" />}
-          <span className="flex-1 text-sm font-medium">{toast.message}</span>
-          <button onClick={() => removeToast(toast.id)} className="opacity-70 hover:opacity-100 flex-shrink-0">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-      ))}
-    </div>
-  );
-};
-
-type AuthUser = {
-  id: number;
-  username: string;
-  email: string;
-  role: string;
-};
-
-const API_BASE_URL = import.meta.env.VITE_API_URL ?? '';
-
-async function authRequest(path: string, options: RequestInit = {}) {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...options,
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw new Error(data.error || 'Something went wrong. Please try again.');
-  }
-  return data;
-}
-
-const AuthPage = ({ onAuthenticated }: { onAuthenticated: (user: AuthUser) => void }) => {
-  const [mode, setMode] = useState<'login' | 'register' | 'forgot'>('login');
+const AuthPage = () => {
+  const { login, signup } = useAuth();
+  const [mode, setMode] = useState<'login' | 'register'>('login');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -110,10 +56,7 @@ const AuthPage = ({ onAuthenticated }: { onAuthenticated: (user: AuthUser) => vo
 
     try {
       if (mode === 'register') {
-        await authRequest('/auth/signup', {
-          method: 'POST',
-          body: JSON.stringify({ username, email, password }),
-        });
+        await signup(username, email, password);
         setMode('login');
         setPassword('');
         setMessage('Account created. Sign in to continue.');
@@ -124,11 +67,7 @@ const AuthPage = ({ onAuthenticated }: { onAuthenticated: (user: AuthUser) => vo
         });
         setMessage('If that email is registered, a reset link has been sent.');
       } else {
-        const user = await authRequest('/auth/login', {
-          method: 'POST',
-          body: JSON.stringify({ username, password }),
-        });
-        onAuthenticated(user);
+        await login(username, password);
       }
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'Unable to complete the request.');
@@ -329,7 +268,6 @@ const CrmApp = ({ user }: { user: AuthUser }) => {
             updateInvoice={updateInvoice}
             deleteInvoice={deleteInvoice}
             addToast={addToast}
-            isAdmin={isAdmin}
           />
         );
 
@@ -374,6 +312,13 @@ const CrmApp = ({ user }: { user: AuthUser }) => {
           />
         );
 
+      case 'profile':
+        return (
+          <ProfileSection
+            addToast={addToast}
+          />
+        );
+
       default:
         return (
           <DashboardSection
@@ -408,17 +353,13 @@ const CrmApp = ({ user }: { user: AuthUser }) => {
         <Topbar
           onMenuClick={() => setSidebarOpen(true)}
           user={user}
-          onGoProfile={() => setView('settings')}
-          onPickSearchResult={(result) => {
-            const viewByType = {
-              client: 'clients',
-              lead: 'leads',
-              invoice: 'invoices',
-            } as const;
-            setView(viewByType[result.type]);
+          onGoProfile={() => setView('profile')}
+          onPickSearchResult={(result: SearchResult) => {
+            if (result.type === 'client') setView('clients');
+            else if (result.type === 'lead') setView('leads');
+            else if (result.type === 'invoice') setView('invoices');
           }}
         />
-
         <div className="flex-1 overflow-y-auto scrollbar-thin p-3 sm:p-4 lg:p-6">
           <div className="max-w-7xl mx-auto">
             {renderContent()}
@@ -436,21 +377,13 @@ const CrmApp = ({ user }: { user: AuthUser }) => {
 };
 
 function App() {
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [isCheckingSession, setIsCheckingSession] = useState(true);
+  const { user, loading } = useAuth();
 
-  useEffect(() => {
-    authRequest('/auth/me')
-      .then(setUser)
-      .catch(() => setUser(null))
-      .finally(() => setIsCheckingSession(false));
-  }, []);
-
-  if (isCheckingSession) {
+  if (loading) {
     return <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center text-[var(--text-muted)]">Checking session...</div>;
   }
 
-  return user ? <CrmApp user={user} /> : <AuthPage onAuthenticated={setUser} />;
+  return user ? <CrmApp user={user} /> : <AuthPage />;
 }
 
 export default App;
