@@ -41,6 +41,16 @@ export interface BoardMessage {
   updated_at: string | null;
 }
 
+export interface MessageBoard {
+  id: number;
+  name: string;
+  description: string;
+  created_by: AuthUser;
+  created_at: string | null;
+  updated_at: string | null;
+  members?: AuthUser[];
+}
+
 export const api = {
   // Auth endpoints intentionally live in @/components/Login-register/authApi.
   // Keep this module to app data only (search, notifications).
@@ -56,27 +66,34 @@ export const api = {
   search: (q: string) =>
     request<{ results: SearchResult[] }>(`/api/search?q=${encodeURIComponent(q)}`),
 
-  messages: () => request<{ messages: BoardMessage[] }>('/api/messages'),
+  boards: () => request<{ boards: MessageBoard[] }>('/api/boards'),
+  board: (id: number) => request<MessageBoard>(`/api/boards/${id}`),
+  boardUsers: () => request<{ users: AuthUser[] }>('/api/boards/users'),
+  createBoard: (input: { name: string; description?: string; member_ids: number[] }) => request<MessageBoard>('/api/boards', { method: 'POST', body: JSON.stringify(input) }),
+  addBoardMembers: (boardId: number, memberIds: number[]) => request<MessageBoard>(`/api/boards/${boardId}/members`, { method: 'POST', body: JSON.stringify({ member_ids: memberIds }) }),
+  removeBoardMember: (boardId: number, userId: number) => request<MessageBoard>(`/api/boards/${boardId}/members/${userId}`, { method: 'DELETE' }),
 
-  createMessage: (content: string) =>
-    request<BoardMessage>('/api/messages', {
+  messages: (boardId: number) => request<{ messages: BoardMessage[] }>(`/api/boards/${boardId}/messages`),
+
+  createMessage: (boardId: number, content: string) =>
+    request<BoardMessage>(`/api/boards/${boardId}/messages`, {
       method: 'POST',
       body: JSON.stringify({ content }),
     }),
 
-  updateMessage: (id: number, content: string) =>
-    request<BoardMessage>(`/api/messages/${id}`, {
+  updateMessage: (boardId: number, id: number, content: string) =>
+    request<BoardMessage>(`/api/boards/${boardId}/messages/${id}`, {
       method: 'PATCH',
       body: JSON.stringify({ content }),
     }),
 
-  deleteMessage: (id: number) =>
-    request<{ message: string }>(`/api/messages/${id}`, {
+  deleteMessage: (boardId: number, id: number) =>
+    request<{ message: string }>(`/api/boards/${boardId}/messages/${id}`, {
       method: 'DELETE',
     }),
 
-  setMessagePinned: (id: number, isPinned: boolean) =>
-    request<BoardMessage>(`/api/messages/${id}/pin`, {
+  setMessagePinned: (boardId: number, id: number, isPinned: boolean) =>
+    request<BoardMessage>(`/api/boards/${boardId}/messages/${id}/pin`, {
       method: 'PATCH',
       body: JSON.stringify({ is_pinned: isPinned }),
     }),
