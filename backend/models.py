@@ -249,6 +249,8 @@ class Message(db.Model):
     content = db.Column(db.Text, nullable=False, default="")
     author_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
     author_user = db.relationship("User", foreign_keys=[author_id])
+    board_id = db.Column(db.Integer, db.ForeignKey("message_board.id"), nullable=False)
+    board = db.relationship("MessageBoard", back_populates="messages")
     is_pinned = db.Column(db.Boolean, nullable=False, default=False)
     created_at = db.Column(
         db.DateTime(timezone=True),
@@ -260,6 +262,35 @@ class Message(db.Model):
         onupdate=lambda: datetime.now(timezone.utc),
     )
     deleted_at = db.Column(db.DateTime(timezone=True))
+
+
+class MessageBoard(db.Model):
+    __tablename__ = "message_board"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(120), nullable=False)
+    description = db.Column(db.String(500), nullable=False, default="")
+    created_by_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    created_by = db.relationship("User", foreign_keys=[created_by_id])
+    created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    deleted_at = db.Column(db.DateTime(timezone=True))
+    members = db.relationship("MessageBoardMember", back_populates="board", cascade="all, delete-orphan")
+    messages = db.relationship("Message", back_populates="board")
+
+
+class MessageBoardMember(db.Model):
+    __tablename__ = "message_board_member"
+    __table_args__ = (db.UniqueConstraint("board_id", "user_id", name="uq_message_board_member"),)
+
+    id = db.Column(db.Integer, primary_key=True)
+    board_id = db.Column(db.Integer, db.ForeignKey("message_board.id"), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    added_by_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    added_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    board = db.relationship("MessageBoard", back_populates="members")
+    user = db.relationship("User", foreign_keys=[user_id])
+    added_by = db.relationship("User", foreign_keys=[added_by_id])
 
 
 class Notification(db.Model):
