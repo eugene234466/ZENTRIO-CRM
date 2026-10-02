@@ -1660,118 +1660,122 @@ export function SettingsSection({
             </div>
           </div>
 
-          <div
-            className="rounded-2xl p-5 sm:p-6"
-            style={{
-              background: 'var(--bg-secondary)',
-              border: '1px solid var(--border-color)',
-            }}
-          >
-            <h2
-              className="text-lg font-semibold"
-              style={{ color: 'var(--text-primary)' }}
-            >
-              Backup
-            </h2>
-
-            <p
-              className="text-sm mt-1 mb-5"
-              style={{ color: 'var(--text-secondary)' }}
-            >
-              Download a copy of your current CRM data.
-            </p>
-
-            <button
-              type="button"
-              onClick={downloadBackup}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium"
-              style={{
-                background: 'var(--accent-primary)',
-                color: '#fff',
-              }}
-            >
-              <Download size={17} />
-              Download backup
-            </button>
-
-            {state.settings.data.lastBackupAt && (
-              <p
-                className="text-xs mt-3"
-                style={{ color: 'var(--text-secondary)' }}
+          {currentUser?.role === 'owner' && (
+            <>
+              <div
+                className="rounded-2xl p-5 sm:p-6"
+                style={{
+                  background: 'var(--bg-secondary)',
+                  border: '1px solid var(--border-color)',
+                }}
               >
-                Last backup:{' '}
-                {new Date(state.settings.data.lastBackupAt).toLocaleString()}
-              </p>
-            )}
-          </div>
-
-          <div
-            className="rounded-2xl p-5 sm:p-6"
-            style={{
-              background: 'var(--bg-secondary)',
-              border: '1px solid var(--border-color)',
-            }}
-          >
-            <h2
-              className="text-lg font-semibold"
-              style={{ color: 'var(--text-primary)' }}
-            >
-              Reset sample data
-            </h2>
-
-            <p
-              className="text-sm mt-1 mb-5"
-              style={{ color: 'var(--text-secondary)' }}
-            >
-              Restore the CRM to its original sample data.
-            </p>
-
-            <button
-              type="button"
-              onClick={resetData}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium"
-              style={{
-                background: 'var(--bg-primary)',
-                color: 'var(--text-primary)',
-                border: '1px solid var(--border-color)',
-              }}
-            >
-              <RotateCcw size={17} />
-              Reset sample data
-            </button>
-          </div>
-
-          <div
-            className="rounded-2xl p-5"
-            style={{
-              background: 'var(--bg-secondary)',
-              border: '1px solid var(--border-color)',
-            }}
-          >
-            <div className="flex items-start gap-3">
-              <Database
-                size={20}
-                style={{ color: 'var(--accent-primary)' }}
-              />
-
-              <div>
-                <h3
-                  className="font-medium"
+                <h2
+                  className="text-lg font-semibold"
                   style={{ color: 'var(--text-primary)' }}
                 >
-                  Current storage
-                </h3>
+                  Backup
+                </h2>
 
                 <p
-                  className="text-sm mt-1"
+                  className="text-sm mt-1 mb-5"
                   style={{ color: 'var(--text-secondary)' }}
                 >
-                  Settings are loaded from the database when available.
-                  Your existing CRM application state remains unchanged.
+                  Download a copy of your current CRM data.
                 </p>
+
+                <button
+                  type="button"
+                  onClick={downloadBackup}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium"
+                  style={{
+                    background: 'var(--accent-primary)',
+                    color: '#fff',
+                  }}
+                >
+                  <Download size={17} />
+                  Download backup
+                </button>
+
+                {state.settings.data.lastBackupAt && (
+                  <p
+                    className="text-xs mt-3"
+                    style={{ color: 'var(--text-secondary)' }}
+                  >
+                    Last backup:{' '}
+                    {new Date(state.settings.data.lastBackupAt).toLocaleString()}
+                  </p>
+                )}
               </div>
-            </div>
-          </div>
+
+              <div
+                className="rounded-2xl p-5 sm:p-6"
+                style={{
+                  background: 'var(--bg-secondary)',
+                  border: '1px solid var(--border-color)',
+                }}
+              >
+                <h2
+                  className="text-lg font-semibold"
+                  style={{ color: 'var(--text-primary)' }}
+                >
+                  Reset sample data
+                </h2>
+
+                <p
+                  className="text-sm mt-1 mb-5"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
+                  Restore the CRM to its original sample data.
+                </p>
+
+                <button
+                  type="button"
+                  onClick={resetData}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium"
+                  style={{
+                    background: 'var(--bg-primary)',
+                    color: 'var(--text-primary)',
+                    border: '1px solid var(--border-color)',
+                  }}
+                >
+                  <RotateCcw size={17} />
+                  Reset sample data
+                </button>
+              </div>
+
+              <div
+                className="rounded-2xl p-5"
+                style={{
+                  background: 'var(--bg-secondary)',
+                  border: '1px solid var(--border-color)',
+                }}
+              >
+                <div className="flex items-start gap-3">
+                  <Database
+                    size={20}
+                    style={{ color: 'var(--accent-primary)' }}
+                  />
+
+                  <div>
+                    <h3
+                      className="font-medium"
+                      style={{ color: 'var(--text-primary)' }}
+                    >
+                      Current storage
+                    </h3>
+
+                    <p
+                      className="text-sm mt-1"
+                      style={{ color: 'var(--text-secondary)' }}
+                    >
+                      Settings are loaded from the database when available.
+                      Your existing CRM application state remains unchanged.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       )}
     </section>
