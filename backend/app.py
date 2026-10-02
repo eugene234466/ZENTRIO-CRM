@@ -42,7 +42,7 @@ def create_app(config_name="development"):
     db.init_app(app)
     bcrypt.init_app(app)
     login_manager.init_app(app)
-    login_manager.login_view = "login"
+    login_manager.login_view = "auth.login"
     migrate.init_app(app, db)
     jwt.init_app(app)
     cors.init_app(app, resources={r"/api/*": {"origins": "*"}, r"/auth/*": {"origins": "*"}}, supports_credentials=True)

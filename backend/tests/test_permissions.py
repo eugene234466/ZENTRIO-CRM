@@ -1,3 +1,4 @@
+import io
 import pytest
 
 from extensions import db
@@ -109,6 +110,99 @@ def test_permission_table(
     assert can(accountant, action) is expected_acc, (
         f"Accountant {action} expected {expected_acc}"
     )
+
+
+@pytest.mark.parametrize(
+    "action",
+    [
+        ACTION_CLIENTS_VIEW,
+        ACTION_CLIENTS_ADD,
+        ACTION_CLIENTS_EDIT,
+        ACTION_LEADS_VIEW,
+        ACTION_LEADS_ADD,
+        ACTION_LEADS_EDIT,
+        ACTION_LEADS_MOVE,
+        ACTION_INVOICES_VIEW,
+        ACTION_INVOICES_CREATE,
+    ],
+)
+def test_staff_own_rows_allow_own_record(app, make_user, action):
+    staff = make_user(f"staff_own_{action}", ROLE_STAFF)
+    contact = Contacts(
+        name="Mine", phone="1", email="m@x.com", address="A",
+        assigned_to_id=staff.id,
+    )
+    lead = Deal(
+        title="Mine", contact_id=1, value=1, assigned_to_id=staff.id,
+    )
+    invoice = None
+    try:
+        from models import Invoice
+        invoice = Invoice(
+            invoice_number=f"INV-OWN-{action}",
+            client_name="Mine",
+            status="draft",
+            assigned_to_id=staff.id,
+        )
+    except ImportError:
+        invoice = None
+
+    db.session.add_all([c for c in (contact, lead, invoice) if c is not None])
+    db.session.commit()
+
+    record = None
+    if "clients" in action:
+        record = contact
+    elif "leads" in action:
+        record = lead
+    elif "invoices" in action:
+        record = invoice
+
+    assert can(staff, action, record) is True
+
+
+@pytest.mark.parametrize(
+    "action",
+    [
+        ACTION_CLIENTS_VIEW,
+        ACTION_CLIENTS_EDIT,
+        ACTION_LEADS_VIEW,
+        ACTION_LEADS_EDIT,
+        ACTION_LEADS_MOVE,
+        ACTION_INVOICES_VIEW,
+    ],
+)
+def test_staff_own_rows_refuse_others_record(app, make_user, action):
+    staff = make_user(f"staff_other_{action}", ROLE_STAFF)
+    contact = Contacts(
+        name="NotMine", phone="1", email="n@x.com", address="B",
+        assigned_to_id=None,
+    )
+    lead = Deal(title="NotMine", contact_id=1, value=1, assigned_to_id=None)
+    invoice = None
+    try:
+        from models import Invoice
+        invoice = Invoice(
+            invoice_number=f"INV-NOT-{action}",
+            client_name="NotMine",
+            status="draft",
+            assigned_to_id=None,
+        )
+    except ImportError:
+        invoice = None
+
+    db.session.add_all([c for c in (contact, lead, invoice) if c is not None])
+    db.session.commit()
+
+    record = None
+    if "clients" in action:
+        record = contact
+    elif "leads" in action:
+        record = lead
+    elif "invoices" in action:
+        record = invoice
+
+    assert can(staff, action, record) is False
 
 
 def test_staff_own_rule_clients(app, make_user):
@@ -228,3 +322,153 @@ def test_admin_cannot_change_owner_via_http(
         json={"role": "admin"},
     )
     assert resp.status_code == 403
+
+
+def test_avatar_rejects_oversized_file(client, make_user, login):
+    make_user("u_avatar_size", ROLE_STAFF)
+    login("u_avatar_size")
+
+    big = b"\x89PNG\r\n\x1a\n" + b"0" * (400 * 1024)
+    data = {
+        "avatar": (io.BytesIO(big), "big.png"),
+    }
+    resp = client.post(
+        "/auth/me/avatar",
+        data=data,
+        content_type="multipart/form-data",
+    )
+    assert resp.status_code == 400
+    assert "300 KB" in resp.get_json()["error"]
+
+
+def test_avatar_rejects_disallowed_extension(client, make_user, login):
+    make_user("u_avatar_ext", ROLE_STAFF)
+    login("u_avatar_ext")
+
+    data = {"avatar": (io.BytesIO(b"hello"), "note.txt")}
+    resp = client.post(
+        "/auth/me/avatar",
+        data=data,
+        content_type="multipart/form-data",
+    )
+    assert resp.status_code == 400
+    assert resp.get_json()["error"] == "File type not allowed"
+
+
+def test_logo_rejects_oversized_file(client, make_user, login):
+    make_user("u_logo_size", ROLE_STAFF)
+    login("u_logo_size")
+
+    big = b"\x89PNG\r\n\x1a\n" + b"0" * (400 * 1024)
+    data = {"logo": (io.BytesIO(big), "big.png")}
+    resp = client.post(
+        "/api/invoices/settings/business-profile/logo",
+        data=data,
+        content_type="multipart/form-data",
+    )
+    assert resp.status_code == 400
+    assert "300 KB" in resp.get_json()["error"]
+
+def test_staff_blocked_from_settings_routes(client, make_user, login):
+    make_user("staff_settings", ROLE_STAFF)
+    login("staff_settings")
+
+    for method, path in [
+        ("get", "/api/invoices/settings"),
+        ("put", "/api/invoices/settings"),
+        ("get", "/api/invoices/settings/business-profile"),
+        ("put", "/api/invoices/settings/business-profile"),
+        ("get", "/api/invoices/settings/payment-methods"),
+        ("post", "/api/invoices/settings/payment-methods"),
+        ("get", "/api/settings/lists"),
+        ("put", "/api/settings/lists"),
+    ]:
+        resp = getattr(client, method)(path, json={})
+        assert resp.status_code == 403, f"{method.upper()} {path} should be 403 for staff"
+
+
+def test_accountant_blocked_from_settings_routes(client, make_user, login):
+    make_user("acc_settings", ROLE_ACCOUNTANT)
+    login("acc_settings")
+
+    for method, path in [
+        ("get", "/api/invoices/settings"),
+        ("put", "/api/invoices/settings"),
+        ("get", "/api/settings/lists"),
+    ]:
+        resp = getattr(client, method)(path, json={})
+        assert resp.status_code == 403, f"{method.upper()} {path} should be 403 for accountant"
+
+
+def test_manager_blocked_from_settings_routes(client, make_user, login):
+    make_user("mgr_settings", ROLE_MANAGER)
+    login("mgr_settings")
+
+    resp = client.get("/api/invoices/settings")
+    assert resp.status_code == 403
+
+    resp = client.put("/api/settings/lists", json={"client_types": []})
+    assert resp.status_code == 403
+
+
+def test_admin_can_access_settings_routes(client, make_user, login):
+    make_user("admin_settings", ROLE_ADMIN)
+    login("admin_settings")
+
+    assert client.get("/api/invoices/settings").status_code == 200
+    assert client.get("/api/settings/lists").status_code == 200
+    assert client.get("/api/invoices/settings/business-profile").status_code == 200
+
+
+def test_staff_blocked_from_team_mutations(client, make_user, login):
+    make_user("staff_team", ROLE_STAFF)
+    login("staff_team")
+
+    # Reads are open so staff can see the team.
+    assert client.get("/api/team").status_code == 200
+
+    # Mutations are not.
+    resp = client.post("/api/team", json={"name": "X", "email": "x@x.com"})
+    assert resp.status_code == 403
+
+    resp = client.put("/api/team/1", json={"name": "Y"})
+    assert resp.status_code == 403
+
+    resp = client.delete("/api/team/1")
+    assert resp.status_code == 403
+
+
+def test_manager_blocked_from_team_mutations(client, make_user, login):
+    make_user("mgr_team", ROLE_MANAGER)
+    login("mgr_team")
+
+    resp = client.post("/api/team", json={"name": "X", "email": "x@x.com"})
+    assert resp.status_code == 403
+
+
+def test_admin_can_create_team_member(client, make_user, login):
+    make_user("admin_team", ROLE_ADMIN)
+    login("admin_team")
+
+    resp = client.post(
+        "/api/team",
+        json={"name": "New Dev", "email": "dev@zentrio.io", "role": "Developer"},
+    )
+    assert resp.status_code == 201
+
+
+def test_account_settings_open_to_all_roles(client, make_user, login, logout):
+    for role in (ROLE_STAFF, ROLE_ACCOUNTANT, ROLE_MANAGER, ROLE_ADMIN):
+        username = f"acct_{role}"
+        make_user(username, role)
+        login(username)
+
+        assert client.get("/api/settings/account").status_code == 200
+        assert client.put(
+            "/api/settings/account",
+            json={"display_name": "X", "email": "x@x.com"},
+        ).status_code == 200
+
+        logout()
+
+

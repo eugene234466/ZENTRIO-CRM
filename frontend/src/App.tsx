@@ -8,7 +8,7 @@ import { useAppState } from '@/hooks/useAppState';
 import { useToast } from '@/hooks/useToast';
 import { useAuth } from '@/hooks/useAuth';
 import { ToastContainer } from '@/components/statusBadge';
-import type { AuthUser } from '@/components/Login-register/authApi';
+import { authRequest, type AuthUser } from '@/components/Login-register/authApi';
 import type { SearchResult } from '@/lib/api';
 import './App.css';
 
@@ -30,7 +30,7 @@ gsap.registerPlugin(ScrollTrigger);
 
 const AuthPage = () => {
   const { login, signup } = useAuth();
-  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [mode, setMode] = useState<'login' | 'register' | 'forgot'>('login');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -268,6 +268,7 @@ const CrmApp = ({ user }: { user: AuthUser }) => {
             updateInvoice={updateInvoice}
             deleteInvoice={deleteInvoice}
             addToast={addToast}
+            isAdmin={isAdmin}
           />
         );
 
@@ -355,7 +356,7 @@ const CrmApp = ({ user }: { user: AuthUser }) => {
           user={user}
           onGoProfile={() => setView('profile')}
           onPickSearchResult={(result: SearchResult) => {
-            if (result.type === 'client') setView('clients');
+            if (result.type === 'client' || result.type === 'contact') setView('clients');
             else if (result.type === 'lead') setView('leads');
             else if (result.type === 'invoice') setView('invoices');
           }}

@@ -2,7 +2,7 @@ import os
 import json
 
 from flask import Blueprint, request, jsonify, current_app
-from flask_login import login_required, current_user
+from flask_login import current_user
 from werkzeug.utils import secure_filename
 
 from models import (
@@ -16,16 +16,14 @@ from models import (
     TeamTask,
 )
 
+from permissions import (
+    permission_required,
+    ACTION_SETTINGS,
+    ACTION_TEAM_MANAGE,
+)
+
 
 settings_bp = Blueprint('settings_bp', __name__)
-
-
-@settings_bp.before_request
-def require_login():
-    if request.method == 'OPTIONS':
-        return None
-    if not current_user.is_authenticated:
-        return jsonify({'error': 'Login required.'}), 401
 
 
 ALLOWED_EXTENSIONS = {
@@ -36,6 +34,8 @@ ALLOWED_EXTENSIONS = {
     'webp',
 }
 
+MAX_LOGO_SIZE = 300 * 1024
+
 
 def allowed_file(filename):
     return (
@@ -43,6 +43,13 @@ def allowed_file(filename):
         and filename.rsplit('.', 1)[1].lower()
         in ALLOWED_EXTENSIONS
     )
+
+
+def _file_size(file_storage):
+    file_storage.seek(0, os.SEEK_END)
+    size = file_storage.tell()
+    file_storage.seek(0)
+    return size
 
 
 def get_current_user_id():
@@ -58,6 +65,7 @@ def get_current_user_id():
     '/api/invoices/settings/business-profile',
     methods=['GET']
 )
+@permission_required(ACTION_SETTINGS)
 def get_business_profile():
     user_id = get_current_user_id()
 
@@ -85,6 +93,7 @@ def get_business_profile():
     '/api/invoices/settings/business-profile',
     methods=['PUT']
 )
+@permission_required(ACTION_SETTINGS)
 def update_business_profile():
     user_id = get_current_user_id()
     data = request.get_json() or {}
@@ -139,6 +148,7 @@ def update_business_profile():
     '/api/invoices/settings/business-profile/logo',
     methods=['POST']
 )
+@permission_required(ACTION_SETTINGS)
 def upload_logo():
     user_id = get_current_user_id()
 
@@ -154,54 +164,59 @@ def upload_logo():
             'error': 'No selected file'
         }), 400
 
-    if file and allowed_file(file.filename):
-        filename = secure_filename(
-            f'user_{user_id}_{file.filename}'
-        )
-
-        upload_folder = current_app.config.get(
-            'UPLOAD_FOLDER',
-            'uploads'
-        )
-
-        os.makedirs(
-            upload_folder,
-            exist_ok=True
-        )
-
-        file_path = os.path.join(
-            upload_folder,
-            filename
-        )
-
-        file.save(file_path)
-
-        logo_url = f'/uploads/{filename}'
-
-        # FIXED: user_id, not ser_id
-        profile = BusinessProfile.query.filter_by(
-            user_id=user_id
-        ).first()
-
-        if not profile:
-            profile = BusinessProfile(
-                user_id=user_id
-            )
-            db.session.add(profile)
-
-        profile.logo_url = logo_url
-
-        db.session.commit()
-
+    if not allowed_file(file.filename):
         return jsonify({
-            'logo_url': logo_url,
-            'logoUrl': logo_url,
-            'message': 'Logo uploaded successfully',
-        }), 200
+            'error': 'File type not allowed'
+        }), 400
+
+    if _file_size(file) > MAX_LOGO_SIZE:
+        return jsonify({
+            'error': 'Logo must be 300 KB or smaller.'
+        }), 400
+
+    filename = secure_filename(
+        f'user_{user_id}_{file.filename}'
+    )
+
+    upload_folder = current_app.config.get(
+        'UPLOAD_FOLDER',
+        'uploads'
+    )
+
+    os.makedirs(
+        upload_folder,
+        exist_ok=True
+    )
+
+    file_path = os.path.join(
+        upload_folder,
+        filename
+    )
+
+    file.save(file_path)
+
+    logo_url = f'/uploads/{filename}'
+
+    # FIXED: user_id, not ser_id
+    profile = BusinessProfile.query.filter_by(
+        user_id=user_id
+    ).first()
+
+    if not profile:
+        profile = BusinessProfile(
+            user_id=user_id
+        )
+        db.session.add(profile)
+
+    profile.logo_url = logo_url
+
+    db.session.commit()
 
     return jsonify({
-        'error': 'File type not allowed'
-    }), 400
+        'logo_url': logo_url,
+        'logoUrl': logo_url,
+        'message': 'Logo uploaded successfully',
+    }), 200
 
 
 # ============================================================
@@ -212,6 +227,7 @@ def upload_logo():
     '/api/invoices/settings',
     methods=['GET']
 )
+@permission_required(ACTION_SETTINGS)
 def get_invoice_settings():
     user_id = get_current_user_id()
 
@@ -236,6 +252,7 @@ def get_invoice_settings():
     '/api/invoices/settings',
     methods=['PUT']
 )
+@permission_required(ACTION_SETTINGS)
 def update_invoice_settings():
     user_id = get_current_user_id()
 
@@ -303,6 +320,7 @@ def update_invoice_settings():
     '/api/invoices/settings/payment-methods',
     methods=['GET']
 )
+@permission_required(ACTION_SETTINGS)
 def get_payment_methods():
     user_id = get_current_user_id()
 
@@ -320,6 +338,7 @@ def get_payment_methods():
     '/api/invoices/settings/payment-methods',
     methods=['POST']
 )
+@permission_required(ACTION_SETTINGS)
 def add_payment_method():
     user_id = get_current_user_id()
 
@@ -359,6 +378,7 @@ def add_payment_method():
     '/api/invoices/settings/payment-methods/<int:method_id>',
     methods=['DELETE']
 )
+@permission_required(ACTION_SETTINGS)
 def delete_payment_method(method_id):
     user_id = get_current_user_id()
 
@@ -388,6 +408,7 @@ def delete_payment_method(method_id):
     '/api/settings/lists',
     methods=['GET']
 )
+@permission_required(ACTION_SETTINGS)
 def get_list_settings():
     user_id = get_current_user_id()
 
@@ -430,6 +451,7 @@ def get_list_settings():
     '/api/settings/lists',
     methods=['PUT']
 )
+@permission_required(ACTION_SETTINGS)
 def update_list_settings():
     user_id = get_current_user_id()
     data = request.get_json() or {}
@@ -467,13 +489,16 @@ def update_list_settings():
 
 
 # ============================================================
-# ACCOUNT SETTINGS
+# ACCOUNT SETTINGS — every authenticated user can see/edit
+# their own account per section 5 ("Own account and
+# notification choices" is Yes for every role).
 # ============================================================
 
 @settings_bp.route(
     '/api/settings/account',
     methods=['GET']
 )
+@permission_required('own_account')
 def get_account_settings():
     user_id = get_current_user_id()
 
@@ -504,6 +529,7 @@ def get_account_settings():
     '/api/settings/account',
     methods=['PUT']
 )
+@permission_required('own_account')
 def update_account_settings():
     user_id = get_current_user_id()
     data = request.get_json() or {}
@@ -562,13 +588,15 @@ def update_account_settings():
 
 
 # ============================================================
-# TEAM MEMBERS
+# TEAM MEMBERS — reads open to authenticated staff (they need
+# to see the team), mutations gated by ACTION_TEAM_MANAGE.
 # ============================================================
 
 @settings_bp.route(
     '/api/team',
     methods=['GET']
 )
+@permission_required('own_tasks')
 def get_team_members():
     user_id = get_current_user_id()
 
@@ -586,6 +614,7 @@ def get_team_members():
     '/api/team',
     methods=['POST']
 )
+@permission_required(ACTION_TEAM_MANAGE)
 def create_team_member():
     user_id = get_current_user_id()
     data = request.get_json() or {}
@@ -627,6 +656,7 @@ def create_team_member():
     '/api/team/<int:member_id>',
     methods=['PUT']
 )
+@permission_required(ACTION_TEAM_MANAGE)
 def update_team_member(member_id):
     user_id = get_current_user_id()
 
@@ -668,6 +698,7 @@ def update_team_member(member_id):
     '/api/team/<int:member_id>',
     methods=['DELETE']
 )
+@permission_required(ACTION_TEAM_MANAGE)
 def delete_team_member(member_id):
     user_id = get_current_user_id()
 
@@ -690,13 +721,14 @@ def delete_team_member(member_id):
 
 
 # ============================================================
-# TEAM TASKS
+# TEAM TASKS — mutations gated by ACTION_TEAM_MANAGE.
 # ============================================================
 
 @settings_bp.route(
     '/api/team/<int:member_id>/tasks',
     methods=['POST']
 )
+@permission_required(ACTION_TEAM_MANAGE)
 def create_team_task(member_id):
     user_id = get_current_user_id()
 
@@ -750,6 +782,7 @@ def create_team_task(member_id):
     '/api/team/<int:member_id>/tasks/<int:task_id>',
     methods=['PUT']
 )
+@permission_required(ACTION_TEAM_MANAGE)
 def update_team_task(member_id, task_id):
     user_id = get_current_user_id()
 
@@ -804,6 +837,7 @@ def update_team_task(member_id, task_id):
     '/api/team/<int:member_id>/tasks/<int:task_id>',
     methods=['DELETE']
 )
+@permission_required(ACTION_TEAM_MANAGE)
 def delete_team_task(member_id, task_id):
     user_id = get_current_user_id()
 

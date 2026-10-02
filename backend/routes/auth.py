@@ -25,6 +25,7 @@ auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
 
 # Same allow-list as all_settings.py's logo upload — keep them in sync.
 ALLOWED_AVATAR_EXTENSIONS = {"png", "jpg", "jpeg", "svg", "webp"}
+MAX_AVATAR_SIZE = 300 * 1024
 
 
 def _allowed_avatar(filename: str) -> bool:
@@ -32,6 +33,13 @@ def _allowed_avatar(filename: str) -> bool:
         "." in filename
         and filename.rsplit(".", 1)[1].lower() in ALLOWED_AVATAR_EXTENSIONS
     )
+
+
+def _avatar_size(file_storage) -> int:
+    file_storage.seek(0, os.SEEK_END)
+    size = file_storage.tell()
+    file_storage.seek(0)
+    return size
 
 
 def _first_error(form):
@@ -121,6 +129,9 @@ def upload_avatar():
 
     if not _allowed_avatar(file.filename):
         return jsonify({"error": "File type not allowed"}), 400
+
+    if _avatar_size(file) > MAX_AVATAR_SIZE:
+        return jsonify({"error": "Avatar must be 300 KB or smaller."}), 400
 
     ext = file.filename.rsplit(".", 1)[1].lower()
     filename = secure_filename(f"user_{current_user.id}_avatar.{ext}")

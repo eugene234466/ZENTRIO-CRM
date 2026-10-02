@@ -60,7 +60,6 @@ def add_notification(user_id, kind, title, body="", link=""):
         link=link,
     )
     db.session.add(item)
-    db.session.commit()
 
 
 @notifications_bp.route("/notifications", methods=["GET"])
@@ -70,7 +69,10 @@ def list_notifications():
 
     if pref.overdue_invoices and Invoice is not None:
         today = date.today()
-        invoices = Invoice.query.filter(Invoice.due_date < today).all()
+        invoices = Invoice.query.filter(
+            Invoice.due_date < today,
+            Invoice.deleted_at.is_(None),
+        ).all()
 
         for inv in invoices:
             if not can(current_user, ACTION_INVOICES_VIEW, inv):
@@ -117,7 +119,10 @@ def list_notifications():
             )
 
     if pref.pinned_messages and Message is not None:
-        messages = Message.query.filter_by(is_pinned=True).all()
+        messages = Message.query.filter_by(
+            is_pinned=True,
+            deleted_at=None,
+        ).all()
 
         for msg in messages:
             add_notification(
@@ -127,6 +132,8 @@ def list_notifications():
                 getattr(msg, "content", ""),
                 "/board",
             )
+
+    db.session.commit()
 
     items = (
         Notification.query

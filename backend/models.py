@@ -102,7 +102,7 @@ class Deal(db.Model):
     stage = db.Column(db.String(20), default="NEW")
     assigned_to_id = db.Column(db.Integer, db.ForeignKey("user.id"))
     created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     deleted_at = db.Column(db.DateTime(timezone=True))
 
     # NEW: fields the frontend Lead type carries.

@@ -6,7 +6,7 @@ from flask_login import login_required, current_user
 from sqlalchemy.exc import IntegrityError
 
 from extensions import db, limiter, rate_limit_user_key
-from models import Invoice, InvoiceItem, Payment, Receipt, InvoiceCounter, InvoiceSettings, PaymentMethod
+from models import Invoice, InvoiceItem, Payment, Receipt, InvoiceCounter, InvoiceSettings, PaymentMethod, live
 from audit import audit
 from permissions import (
     can,
@@ -50,8 +50,11 @@ def _get_counter_locked():
         db.session.flush()
     except IntegrityError:
         db.session.rollback()
-        return InvoiceCounter.query.filter_by(singleton=True).with_for_update().first()
-    return InvoiceCounter.query.filter_by(singleton=True).with_for_update().first()
+
+    counter = InvoiceCounter.query.filter_by(singleton=True).with_for_update().first()
+    if counter is None:
+        raise RuntimeError("Invoice counter could not be initialized.")
+    return counter
 
 
 def _issue_invoice_number():
@@ -69,8 +72,19 @@ def _issue_receipt_number():
 
 
 def _recompute_totals(invoice):
-    subtotal = sum((item.quantity * item.unit_price for item in invoice.items), start=0)
-    tax_amount = subtotal * (invoice.tax_rate_snapshot / 100) if invoice.tax_enabled_snapshot else 0
+    subtotal = Decimal("0")
+    for item in invoice.items:
+        quantity = Decimal(str(item.quantity if item.quantity is not None else 0))
+        unit_price = Decimal(str(item.unit_price if item.unit_price is not None else 0))
+        subtotal += quantity * unit_price
+
+    if invoice.tax_enabled_snapshot:
+        raw_rate = invoice.tax_rate_snapshot if invoice.tax_rate_snapshot is not None else 0
+        tax_rate = Decimal(str(raw_rate))
+        tax_amount = subtotal * tax_rate / Decimal("100")
+    else:
+        tax_amount = Decimal("0")
+
     invoice.subtotal = subtotal
     invoice.tax_amount = tax_amount
     invoice.total = subtotal + tax_amount
@@ -79,6 +93,7 @@ def _recompute_totals(invoice):
 def _set_items(invoice, items_data):
     for item in list(invoice.items):
         db.session.delete(item)
+    db.session.flush()
     for item_data in items_data or []:
         db.session.add(InvoiceItem(
             invoice=invoice,
@@ -86,12 +101,13 @@ def _set_items(invoice, items_data):
             quantity=item_data.get("quantity", 1),
             unit_price=item_data.get("unit_price", 0),
         ))
+    db.session.flush()
 
 
 @invoices_bp.route("/", methods=["GET"])
 @login_required
 def list_invoices():
-    invoices = Invoice.query.all()
+    invoices = live(Invoice).all()
     changed = False
     for inv in invoices:
         if _apply_overdue(inv):

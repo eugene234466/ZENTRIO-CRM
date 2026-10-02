@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const API = axios.create({
-  baseURL: `${import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:5000'}/api`,
+  baseURL: '/api',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -484,16 +484,12 @@ export const uploadAvatar = async (
   formData: FormData
 ): Promise<{ avatar: string; message: string }> => {
   const base = import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:5000';
-  const response = await axios.post<{ avatar: string; message: string }>(
-    `${base}/auth/me/avatar`,
-    formData,
-    {
-      withCredentials: true,
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    }
-  );
+const response = await axios.post(`/auth/me/avatar`, formData, {
+  withCredentials: true,
+  headers: {
+    'Content-Type': 'multipart/form-data',
+  },
+});
   return response.data;
 };
 

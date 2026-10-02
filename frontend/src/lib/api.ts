@@ -100,7 +100,7 @@ export const api = {
 };
 
 export interface SearchResult {
-  type: 'client' | 'lead' | 'invoice';
+  type: 'contact' | 'client' | 'lead' | 'invoice';
   id: number;
   title: string;
   subtitle: string;

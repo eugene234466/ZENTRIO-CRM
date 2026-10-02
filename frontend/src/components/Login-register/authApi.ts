@@ -25,8 +25,22 @@ export async function authRequest(path: string, options: RequestInit = {}) {
   return data;
 }
 
+async function fetchCurrentUser(): Promise<AuthUser | null> {
+  const response = await fetch(`${API_BASE_URL}/auth/me`, {
+    credentials: 'include',
+  });
+  if (response.status === 401) {
+    return null;
+  }
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data.error || 'Failed to check session.');
+  }
+  return data as AuthUser;
+}
+
 export const authApi = {
-  me: (): Promise<AuthUser> => authRequest('/auth/me'),
+  me: fetchCurrentUser,
 
   signup: (input: { username: string; email: string; password: string }): Promise<{ msg: string; username: string; email: string }> =>
     authRequest('/auth/signup', {
@@ -41,7 +55,11 @@ export const authApi = {
       method: 'POST',
       body: JSON.stringify({ username, password }),
     });
-    return authRequest('/auth/me');
+    const user = await fetchCurrentUser();
+    if (!user) {
+      throw new Error('Login succeeded but session could not be established.');
+    }
+    return user;
   },
 
   logout: (): Promise<void> => authRequest('/auth/logout', { method: 'POST' }),
@@ -72,7 +90,11 @@ export const authApi = {
       throw new Error(data.error || 'Failed to upload avatar.');
     }
 
-    return authRequest('/auth/me');
+    const user = await fetchCurrentUser();
+    if (!user) {
+      throw new Error('Avatar uploaded but session could not be refreshed.');
+    }
+    return user;
   },
 
   // B3: "Forgot password" email.

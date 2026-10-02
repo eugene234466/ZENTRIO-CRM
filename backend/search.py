@@ -12,7 +12,12 @@ from permissions import (
 search_bp = Blueprint("search", __name__)
 
 try:
-    from models import Contacts as Client
+    from models import Contacts
+except ImportError:
+    Contacts = None
+
+try:
+    from models import Client
 except ImportError:
     Client = None
 
@@ -54,13 +59,33 @@ def search():
     like = f"%{_escape_like(q)}%"
     escape = "\\"
 
+    if Contacts is not None:
+        contacts = live(Contacts).filter(
+            or_(
+                Contacts.name.ilike(like, escape=escape),
+                Contacts.email.ilike(like, escape=escape),
+                Contacts.phone.ilike(like, escape=escape),
+                Contacts.address.ilike(like, escape=escape),
+            )
+        ).limit(20).all()
+
+        for row in contacts:
+            if can(current_user, ACTION_CLIENTS_VIEW, row):
+                results.append({
+                    "type": "contact",
+                    "id": row.id,
+                    "title": row.name,
+                    "subtitle": row.email,
+                    "link": f"/contacts/{row.id}",
+                })
+
     if Client is not None:
         clients = live(Client).filter(
             or_(
                 Client.name.ilike(like, escape=escape),
                 Client.email.ilike(like, escape=escape),
                 Client.phone.ilike(like, escape=escape),
-                Client.address.ilike(like, escape=escape),
+                Client.company.ilike(like, escape=escape),
             )
         ).limit(20).all()
 
@@ -78,6 +103,9 @@ def search():
         leads = live(Lead).filter(
             or_(
                 Lead.title.ilike(like, escape=escape),
+                Lead.name.ilike(like, escape=escape),
+                Lead.company.ilike(like, escape=escape),
+                Lead.email.ilike(like, escape=escape),
                 Lead.stage.ilike(like, escape=escape),
             )
         ).limit(20).all()
@@ -87,13 +115,15 @@ def search():
                 results.append({
                     "type": "lead",
                     "id": row.id,
-                    "title": row.title,
-                    "subtitle": f"Stage: {row.stage}",
+                    "title": row.title or row.name or "",
+                    "subtitle": row.company or f"Stage: {row.stage}",
                     "link": f"/leads/{row.id}",
                 })
 
     if Invoice is not None:
         invoices = Invoice.query.filter(
+            Invoice.deleted_at.is_(None),
+        ).filter(
             or_(
                 Invoice.invoice_number.ilike(like, escape=escape),
                 Invoice.client_name.ilike(like, escape=escape),
